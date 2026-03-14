@@ -577,7 +577,7 @@ export default function BolgePage() {
           { id: "done", label: "Sonuçlananlar", icon: CheckCircle },
         ]}
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={(tab) => setActiveTab(tab as "dashboard" | "pending" | "done")}
       />
 
       <ApprovalModal
