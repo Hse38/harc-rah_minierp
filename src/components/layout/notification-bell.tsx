@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell } from "lucide-react";
+import { Bell, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Notification } from "@/types";
 import { toast } from "sonner";
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -122,8 +123,13 @@ export function NotificationBell({
         </Button>
       </SheetTrigger>
       <SheetContent side="right" className="w-full max-w-[380px]">
-        <SheetHeader>
-          <SheetTitle>Bildirimler</SheetTitle>
+        <SheetHeader className="flex flex-row items-center justify-between space-y-0 border-b pb-3">
+          <SheetTitle className="text-left">Bildirimler</SheetTitle>
+          <SheetClose asChild>
+            <Button variant="ghost" size="icon" className="shrink-0 rounded-full" aria-label="Kapat">
+              <X className="h-5 w-5" />
+            </Button>
+          </SheetClose>
         </SheetHeader>
         <div className="mt-4 space-y-1">
           {notifications.length === 0 ? (

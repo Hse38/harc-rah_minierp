@@ -167,8 +167,7 @@ export default function DeneyapYeniPage() {
         toast.success(
           `${expenseNumber} gönderildi, bölge sorumlusunun onayı bekleniyor.`
         );
-        router.push("/dashboard/deneyap");
-        router.refresh();
+        window.location.href = "/dashboard/deneyap";
         return;
       }
 

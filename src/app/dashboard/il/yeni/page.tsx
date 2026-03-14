@@ -171,8 +171,7 @@ export default function IlYeniPage() {
         toast.success(
           `${expenseNumber} gönderildi, bölge sorumlusunun onayı bekleniyor.`
         );
-        router.push("/dashboard/il");
-        router.refresh();
+        window.location.href = "/dashboard/il";
         return;
       }
 

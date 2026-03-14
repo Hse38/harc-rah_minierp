@@ -444,7 +444,12 @@ export function KoordinatorClient({
                         <p className="text-sm text-slate-500">{e.expense_number} · {e.il ?? "—"} · {regionToTurkish(e.bolge)} · {e.expense_type}</p>
                         <p className="text-sm text-slate-600 mt-1">{formatCurrency(e.amount)} · {formatDate(e.created_at)}</p>
                       </div>
-                      <StatusBadge status={e.status} />
+                      <div className="flex flex-col items-end gap-1">
+                        {e.status === "pending_koord" && (
+                          <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">Bölge talebi</span>
+                        )}
+                        <StatusBadge status={e.status} />
+                      </div>
                     </div>
                     {e.description && <p className="text-xs text-slate-500">{e.description}</p>}
                     {e.receipt_url && (

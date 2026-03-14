@@ -169,8 +169,7 @@ export default function BolgeYeniPage() {
         }
 
         toast.success(`${expenseNumber} TÇK onayına gönderildi.`);
-        router.push("/dashboard/bolge");
-        router.refresh();
+        window.location.href = "/dashboard/bolge";
         return;
       }
 

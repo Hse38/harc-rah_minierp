@@ -169,6 +169,10 @@ export default function YkPage() {
       ).length,
     [expenses]
   );
+  const bolgeTalebiCount = useMemo(
+    () => expenses.filter((e) => e.status === "pending_koord").length,
+    [expenses]
+  );
   const paidTotal = useMemo(
     () =>
       expenses
@@ -508,6 +512,12 @@ export default function YkPage() {
               />
               <MetricCard title="Ödenen toplam (₺)" value={formatCurrency(paidTotal)} />
               <MetricCard title="Ort. harcama (₺)" value={formatCurrency(avgAmount)} />
+              <div className="col-span-2">
+                <MetricCard
+                  title="Bölge talepleri (TÇK bekliyor)"
+                  value={bolgeTalebiCount}
+                />
+              </div>
             </div>
 
             {monthlyTrendData.some((d) => d.toplam > 0) && (
