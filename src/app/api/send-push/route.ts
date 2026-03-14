@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import webpush from "web-push";
+import * as webpush from "web-push";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const vapidPublic = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
