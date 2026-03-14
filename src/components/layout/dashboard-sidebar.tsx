@@ -114,15 +114,14 @@ export function DashboardSidebar({
           <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-lg bg-[#2563EB] flex items-center justify-center overflow-hidden shrink-0">
             <Image
               src={T3_LOGO_URL}
-              alt="Logo"
+              alt="TAMGA"
               width={36}
               height={36}
               className="object-contain"
             />
           </div>
-          <span className="font-semibold text-slate-800 text-sm lg:text-base">tamga-erp</span>
+          <span className="font-bold text-slate-900 text-base lg:text-lg tracking-tight uppercase">TAMGA</span>
         </div>
-        <p className="text-xs text-slate-500 mt-1">Sistemi</p>
       </div>
       <div className="p-3 lg:p-4 border-b border-slate-100">
         <p className="text-xs font-medium text-slate-700 truncate" title={userName}>

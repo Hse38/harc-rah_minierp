@@ -39,8 +39,8 @@ export function Topbar({
     <header className="sticky top-0 z-40 w-full max-w-[430px] md:max-w-full mx-auto border-b border-slate-200 lg:border-b lg:border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
       <div className="flex h-14 lg:h-16 items-center justify-between px-4 lg:px-8">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="font-semibold text-slate-800 truncate lg:text-lg">
-            tamga-erp Sistemi
+          <span className="font-bold text-slate-900 truncate lg:text-lg tracking-tight uppercase">
+            TAMGA
           </span>
         </div>
         <div className="flex items-center gap-1 lg:gap-3">

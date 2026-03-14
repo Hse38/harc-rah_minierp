@@ -98,8 +98,8 @@ export default function LoginPage() {
                 unoptimized={false}
               />
             </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">
-              tamga-erp Sistemi
+            <h1 className="text-2xl font-bold text-white tracking-tight uppercase">
+              TAMGA
             </h1>
             <p className="text-sm text-white/70">T3 Vakfı</p>
           </div>

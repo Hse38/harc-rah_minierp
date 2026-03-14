@@ -5,7 +5,7 @@ export async function buildExcelBuffer(
   expenses: Pick<Expense, "submitter_name" | "iban" | "expense_number">[]
 ): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
-  const ws = wb.addWorksheet("tamga-erp", { views: [{ state: "frozen", ySplit: 1 }] });
+  const ws = wb.addWorksheet("TAMGA", { views: [{ state: "frozen", ySplit: 1 }] });
 
   const headers = ["Ad Soyad", "IBAN", "Açıklama"];
   const headerRow = ws.addRow(headers);

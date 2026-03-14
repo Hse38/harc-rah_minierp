@@ -46,7 +46,7 @@ export default function Loading() {
             className="object-contain"
           />
         </div>
-        <p className="text-white text-xl font-semibold mt-4">tamga-erp Sistemi</p>
+        <p className="text-white text-xl font-bold mt-4 tracking-tight uppercase">TAMGA</p>
         <p className="text-white/60 text-sm mt-1">T3 Vakfı</p>
         <div className="mt-6 flex gap-1">
           <span className="w-2 h-2 rounded-full bg-white/80 animate-bounce [animation-delay:0ms]" />

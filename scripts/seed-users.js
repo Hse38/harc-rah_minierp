@@ -8,7 +8,7 @@
  *   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/seed-users.js
  * veya proje kökünden: node scripts/seed-users.js (.env.local okunur)
  *
- * Varsayılan şifre: T3Vakfi2026! (ilk girişte değiştirilsin)
+ * Varsayılan şifre: 123 (SEED_PASSWORD ile değiştirilebilir)
  */
 
 const path = require("path");
@@ -35,7 +35,7 @@ const { createClient } = require("@supabase/supabase-js");
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const TEMP_PASSWORD = process.env.SEED_PASSWORD || "T3Vakfi2026!";
+const TEMP_PASSWORD = process.env.SEED_PASSWORD || "123";
 
 const USERS = [
   // YK Başkanı
