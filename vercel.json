@@ -1,0 +1,6 @@
+{
+  "ignoreCommand": "exit 1",
+  "github": {
+    "silent": true
+  }
+}
