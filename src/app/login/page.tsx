@@ -6,7 +6,10 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Shield, Loader2 } from "lucide-react";
+import Image from "next/image";
+import { Loader2 } from "lucide-react";
+
+const T3_LOGO_URL = "https://raw.githubusercontent.com/Hse38/t3logo/main/1.T3%20dikey.png";
 
 const ROLE_REDIRECT: Record<string, string> = {
   deneyap: "/dashboard/deneyap",
@@ -84,8 +87,16 @@ export default function LoginPage() {
           }}
         >
           <div className="text-center space-y-3">
-            <div className="inline-flex items-center justify-center rounded-2xl bg-white/10 border border-white/20">
-              <Shield className="h-12 w-12 text-white" strokeWidth={2} />
+            <div className="inline-flex items-center justify-center rounded-2xl bg-white/10 border border-white/20 p-3">
+              <Image
+                src={T3_LOGO_URL}
+                alt="T3 Vakfı"
+                width={120}
+                height={120}
+                className="object-contain"
+                priority
+                unoptimized={false}
+              />
             </div>
             <h1 className="text-2xl font-bold text-white tracking-tight">
               Harcırah Sistemi

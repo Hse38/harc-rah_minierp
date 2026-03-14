@@ -2,9 +2,15 @@ import type { Metadata } from "next";
 import { Toaster } from "sonner";
 import "./globals.css";
 
+const LOGO_URL = "https://raw.githubusercontent.com/Hse38/t3logo/main/1.T3%20dikey.png";
+
 export const metadata: Metadata = {
   title: "Harcırah Yönetim Sistemi",
   description: "Deneyap Teknoloji Atölyesi Harcırah Onay ve Ödeme Yönetimi",
+  icons: {
+    icon: LOGO_URL,
+    apple: LOGO_URL,
+  },
 };
 
 export default function RootLayout({

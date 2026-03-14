@@ -103,17 +103,17 @@ export function DashboardSidebar({
   }
 
   return (
-    <aside className="hidden md:flex md:flex-col md:fixed md:left-0 md:top-0 md:bottom-0 w-40 bg-white border-r border-slate-200 z-50">
-      <div className="p-4 border-b border-slate-100">
+    <aside className="hidden md:flex md:flex-col md:fixed md:left-0 md:top-0 md:bottom-0 w-40 lg:w-64 bg-white border-r border-slate-200 z-50">
+      <div className="p-4 lg:p-5 border-b border-slate-100">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-[#2563EB] flex items-center justify-center text-white font-bold text-sm">
+          <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-lg bg-[#2563EB] flex items-center justify-center text-white font-bold text-sm">
             H
           </div>
-          <span className="font-semibold text-slate-800 text-sm">Harcırah</span>
+          <span className="font-semibold text-slate-800 text-sm lg:text-base">Harcırah</span>
         </div>
         <p className="text-xs text-slate-500 mt-1">Sistemi</p>
       </div>
-      <div className="p-3 border-b border-slate-100">
+      <div className="p-3 lg:p-4 border-b border-slate-100">
         <p className="text-xs font-medium text-slate-700 truncate" title={userName}>
           {userName || "Kullanıcı"}
         </p>
@@ -121,7 +121,7 @@ export function DashboardSidebar({
           {ROLE_LABELS[userRole] ?? userRole}
         </Badge>
       </div>
-      <nav className="flex-1 p-2 space-y-0.5 overflow-auto">
+      <nav className="flex-1 p-2 lg:p-3 space-y-0.5 lg:space-y-1 overflow-auto">
         {navItems.map((item) => {
           const active = isActive(item.href);
           const Icon = item.icon;
@@ -129,10 +129,11 @@ export function DashboardSidebar({
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
+              prefetch
+              className={`flex items-center gap-2 rounded-lg px-3 py-2 lg:py-2.5 text-sm transition-colors ${
                 active
-                  ? "bg-[#EFF6FF] text-[#2563EB] font-medium"
-                  : "text-slate-600 hover:bg-slate-100"
+                  ? "bg-[#EFF6FF] text-[#2563EB] font-medium lg:bg-blue-50 lg:border-l-2 lg:border-l-[#2563EB] lg:pl-[10px]"
+                  : "text-slate-600 hover:bg-slate-100 lg:hover:bg-slate-50"
               }`}
             >
               <Icon className="h-4 w-4 shrink-0" />
@@ -141,10 +142,11 @@ export function DashboardSidebar({
           );
         })}
       </nav>
-      <div className="p-2 border-t border-slate-100 space-y-0.5">
+      <div className="p-2 lg:p-3 border-t border-slate-100 space-y-0.5">
         <Link
           href="/dashboard/profil"
-          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+          prefetch
+          className="flex items-center gap-2 rounded-lg px-3 py-2 lg:py-2.5 text-sm text-slate-600 hover:bg-slate-100 transition-colors"
         >
           <User className="h-4 w-4 shrink-0" />
           <span className="truncate">Profil</span>
@@ -152,7 +154,7 @@ export function DashboardSidebar({
         <button
           type="button"
           onClick={handleLogout}
-          className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+          className="w-full flex items-center gap-2 rounded-lg px-3 py-2 lg:py-2.5 text-sm text-slate-600 hover:bg-slate-100 transition-colors text-left"
         >
           <LogOut className="h-4 w-4 shrink-0" />
           <span className="truncate">Çıkış</span>

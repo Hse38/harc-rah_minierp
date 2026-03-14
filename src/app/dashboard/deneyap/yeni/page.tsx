@@ -86,6 +86,14 @@ export default function DeneyapYeniPage() {
     }
   }
 
+  function isDuplicateExpenseNumberError(err: unknown): boolean {
+    if (!err || typeof err !== "object") return false;
+    const e = err as { code?: string; message?: string; details?: string };
+    if (e.code === "23505") return true;
+    const msg = String(e.message ?? e.details ?? "");
+    return msg.includes("expenses_expense_number_key") || msg.includes("duplicate key");
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const amount = parseFloat(form.amount.replace(",", "."));
@@ -94,63 +102,86 @@ export default function DeneyapYeniPage() {
       return;
     }
     setSubmitting(true);
+    const maxAttempts = 3;
+    let lastError: unknown = null;
+    let expenseNumber: string | null = null;
+
     try {
-      const { data: lastRow } = await supabase
-        .from("expenses")
-        .select("expense_number")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
       const { getNextExpenseNumber } = await import("@/lib/expense-number");
-      const expenseNumber = await getNextExpenseNumber(
-        async () => (lastRow as { expense_number: string } | null)?.expense_number ?? null
-      );
 
-      const { error: insertErr } = await supabase.from("expenses").insert({
-        expense_number: expenseNumber,
-        submitter_id: profile.id,
-        submitter_name: profile.full_name,
-        iban: form.iban || profile.iban || "",
-        il: profile.il || "",
-        bolge: profile.bolge || "",
-        expense_type: form.expense_type,
-        amount,
-        description: form.description || "",
-        receipt_url: receiptUrl || null,
-        ai_analysis: analysis ? JSON.stringify(analysis) : null,
-        status: "pending_bolge",
-      });
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        lastError = null;
+        const { data: lastRow } = await supabase
+          .from("expenses")
+          .select("expense_number")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        expenseNumber = await getNextExpenseNumber(
+          async () => (lastRow as { expense_number: string } | null)?.expense_number ?? null
+        );
 
-      if (insertErr) throw insertErr;
-
-      const { data: inserted } = await supabase
-        .from("expenses")
-        .select("id")
-        .eq("expense_number", expenseNumber)
-        .single();
-      const expenseId = (inserted as { id: string } | null)?.id;
-
-      if (expenseId && profile.bolge) {
-        await supabase.from("notifications").insert({
-          recipient_role: "bolge",
-          message: `[${expenseNumber}] yeni harcama bölge onayı bekliyor.`,
-          expense_id: expenseId,
+        const { error: insertErr } = await supabase.from("expenses").insert({
+          expense_number: expenseNumber,
+          submitter_id: profile.id,
+          submitter_name: profile.full_name,
+          iban: form.iban || profile.iban || "",
+          il: profile.il || "",
+          bolge: profile.bolge || "",
+          expense_type: form.expense_type,
+          amount,
+          description: form.description || "",
+          receipt_url: receiptUrl || null,
+          ai_analysis: analysis ? JSON.stringify(analysis) : null,
+          status: "pending_bolge",
         });
-        sendPushFromClient({
-          recipient_role: "bolge",
-          expense_id: expenseId,
-          title: "Yeni harcama onay bekliyor",
-          body: `${profile.full_name} · ${expenseNumber} · ${formatCurrency(amount)}`,
-          url: "/dashboard/bolge",
-        });
+
+        if (insertErr) {
+          lastError = insertErr;
+          if (attempt < maxAttempts && isDuplicateExpenseNumberError(insertErr)) continue;
+          throw insertErr;
+        }
+
+        const { data: inserted } = await supabase
+          .from("expenses")
+          .select("id")
+          .eq("expense_number", expenseNumber)
+          .single();
+        const expenseId = (inserted as { id: string } | null)?.id;
+
+        if (expenseId && profile.bolge) {
+          await supabase.from("notifications").insert({
+            recipient_role: "bolge",
+            message: `[${expenseNumber}] yeni harcama bölge onayı bekliyor.`,
+            expense_id: expenseId,
+          });
+          sendPushFromClient({
+            recipient_role: "bolge",
+            expense_id: expenseId,
+            title: "Yeni harcama onay bekliyor",
+            body: `${profile.full_name} · ${expenseNumber} · ${formatCurrency(amount)}`,
+            url: "/dashboard/bolge",
+          });
+        }
+
+        toast.success(
+          `${expenseNumber} gönderildi, bölge sorumlusunun onayı bekleniyor.`
+        );
+        router.push("/dashboard/deneyap");
+        router.refresh();
+        return;
       }
 
-      toast.success(
-        `${expenseNumber} gönderildi, bölge sorumlusunun onayı bekleniyor.`
-      );
-      router.push("/dashboard/deneyap");
-      router.refresh();
+      if (lastError && isDuplicateExpenseNumberError(lastError)) {
+        toast.error("Numara çakışması oluştu, lütfen tekrar deneyin.");
+        return;
+      }
+      throw lastError;
     } catch (err: unknown) {
+      if (isDuplicateExpenseNumberError(err)) {
+        toast.error("Numara çakışması oluştu, lütfen tekrar deneyin.");
+        return;
+      }
       toast.error(
         err && typeof err === "object" && "message" in err
           ? String((err as { message: string }).message)
