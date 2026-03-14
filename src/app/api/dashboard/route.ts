@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import type { Role } from "@/types";
+import type { Role, ExpenseStatus } from "@/types";
 
 const EXPENSE_FIELDS_DENEYAP =
   "id,expense_number,submitter_id,submitter_name,amount,status,created_at,expense_type";
@@ -12,10 +12,10 @@ export type DashboardDeneyapResponse = {
   averageSpending: number;
   approvalStats: { pending: number; approved: number; paid: number; rejected: number };
   chartData: { ay: string; toplam: number }[];
-  recentExpenses: { id: string; expense_number: string; amount: number; status: string; created_at: string; expense_type: string }[];
+  recentExpenses: { id: string; expense_number: string; amount: number; status: ExpenseStatus; created_at: string; expense_type: string }[];
 };
 
-type ExpenseRow = { id: string; expense_number: string; amount: number; status: string; created_at: string; expense_type: string };
+type ExpenseRow = { id: string; expense_number: string; amount: number; status: ExpenseStatus; created_at: string; expense_type: string };
 
 function computeDeneyapPayload(rows: ExpenseRow[]): DashboardDeneyapResponse {
   const now = new Date();

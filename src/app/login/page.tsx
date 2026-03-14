@@ -101,7 +101,7 @@ export default function LoginPage() {
             <h1 className="text-2xl font-bold text-white tracking-tight">
               Harcırah Sistemi
             </h1>
-            <p className="text-sm text-white/70">T3 Vakfı · Deneyap Teknoloji Atölyeleri</p>
+            <p className="text-sm text-white/70">T3 Vakfı</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">

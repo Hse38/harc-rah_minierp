@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { DashboardDeneyapResponse } from "@/app/api/dashboard/route";
-import type { Expense } from "@/types";
+import type { Expense, ExpenseStatus } from "@/types";
 
 export type DashboardKoordinatorResponse = {
   expenses: Expense[];
@@ -60,7 +60,7 @@ async function getDeneyapPayloadUncached(userId: string): Promise<DashboardDeney
     id: e.id,
     expense_number: e.expense_number,
     amount: e.amount,
-    status: e.status,
+    status: e.status as ExpenseStatus,
     created_at: e.created_at,
     expense_type: e.expense_type ?? "Diğer",
   }));

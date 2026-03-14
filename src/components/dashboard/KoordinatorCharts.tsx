@@ -20,7 +20,8 @@ import {
 const BOLGELER = ["marmara", "ege", "karadeniz", "iç anadolu", "akdeniz", "doğu anadolu", "güneydoğu anadolu"];
 const PIE_COLORS = ["#2563EB", "#22C55E", "#EAB308", "#F97316", "#64748B"];
 
-type RegionTrendItem = Record<string, number> & { ay: string };
+/** ay: month label (string), other keys (region names): number */
+type RegionTrendItem = { [key: string]: number | string; ay: string };
 type ApprovalTimeItem = { bolge: string; ortalamaSaat: number };
 type TypeChartItem = { tür: string; toplam: number };
 
