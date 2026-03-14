@@ -5,6 +5,7 @@ import type { ExpenseStatus } from "@/types";
 
 const LABELS: Record<ExpenseStatus, string> = {
   pending_bolge: "Bölge bekliyor",
+  pending_koord: "TÇK bekliyor",
   approved_bolge: "Koord. bekliyor",
   rejected_bolge: "Reddedildi",
   approved_koord: "Onaylandı",
@@ -12,7 +13,7 @@ const LABELS: Record<ExpenseStatus, string> = {
   paid: "Ödendi",
 };
 
-const COLORS = ["#EAB308", "#3B82F6", "#EF4444", "#22C55E", "#EF4444", "#15803D"];
+const COLORS = ["#EAB308", "#94A3B8", "#3B82F6", "#EF4444", "#22C55E", "#EF4444", "#15803D"];
 
 type Item = { name: string; value: number; status: ExpenseStatus };
 

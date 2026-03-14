@@ -40,7 +40,7 @@ export function Topbar({
       <div className="flex h-14 lg:h-16 items-center justify-between px-4 lg:px-8">
         <div className="flex items-center gap-2 min-w-0">
           <span className="font-semibold text-slate-800 truncate lg:text-lg">
-            Harcırah Sistemi
+            tamga-erp Sistemi
           </span>
         </div>
         <div className="flex items-center gap-1 lg:gap-3">

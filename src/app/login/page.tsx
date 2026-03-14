@@ -99,7 +99,7 @@ export default function LoginPage() {
               />
             </div>
             <h1 className="text-2xl font-bold text-white tracking-tight">
-              Harcırah Sistemi
+              tamga-erp Sistemi
             </h1>
             <p className="text-sm text-white/70">T3 Vakfı</p>
           </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -18,6 +19,8 @@ import {
   User,
   LogOut,
 } from "lucide-react";
+
+const T3_LOGO_URL = "https://raw.githubusercontent.com/Hse38/t3logo/main/1.T3%20dikey.png";
 
 const ROLE_LABELS: Record<string, string> = {
   deneyap: "Deneyap",
@@ -42,12 +45,14 @@ function getNavForRole(role: string): NavItem[] {
       return [
         { label: "Dashboard", href: "/dashboard/il?tab=dashboard", icon: BarChart2 },
         { label: "Harcamalar", href: "/dashboard/il?tab=list", icon: List },
+        { label: "Yeni Harcama", href: "/dashboard/il/yeni", icon: Plus },
       ];
     case "bolge":
       return [
         { label: "Dashboard", href: "/dashboard/bolge?tab=dashboard", icon: BarChart2 },
         { label: "Bekleyenler", href: "/dashboard/bolge?tab=pending", icon: Clock },
         { label: "Sonuçlananlar", href: "/dashboard/bolge?tab=done", icon: CheckCircle },
+        { label: "Yeni Harcama", href: "/dashboard/bolge/yeni", icon: Plus },
       ];
     case "koordinator":
       return [
@@ -106,10 +111,16 @@ export function DashboardSidebar({
     <aside className="hidden md:flex md:flex-col md:fixed md:left-0 md:top-0 md:bottom-0 w-40 lg:w-64 bg-white border-r border-slate-200 z-50">
       <div className="p-4 lg:p-5 border-b border-slate-100">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-lg bg-[#2563EB] flex items-center justify-center text-white font-bold text-sm">
-            H
+          <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-lg bg-[#2563EB] flex items-center justify-center overflow-hidden shrink-0">
+            <Image
+              src={T3_LOGO_URL}
+              alt="Logo"
+              width={36}
+              height={36}
+              className="object-contain"
+            />
           </div>
-          <span className="font-semibold text-slate-800 text-sm lg:text-base">Harcırah</span>
+          <span className="font-semibold text-slate-800 text-sm lg:text-base">tamga-erp</span>
         </div>
         <p className="text-xs text-slate-500 mt-1">Sistemi</p>
       </div>

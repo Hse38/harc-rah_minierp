@@ -46,6 +46,7 @@ type YkTab = "genel" | "bolgeler" | "harcamalar";
 
 const STATUS_COLORS: Record<ExpenseStatus, string> = {
   pending_bolge: "#D97706",
+  pending_koord: "#64748B",
   approved_bolge: "#2563EB",
   rejected_bolge: "#DC2626",
   approved_koord: "#16A34A",
@@ -54,6 +55,7 @@ const STATUS_COLORS: Record<ExpenseStatus, string> = {
 };
 const STATUS_LABELS: Record<ExpenseStatus, string> = {
   pending_bolge: "Bölge bekliyor",
+  pending_koord: "TÇK bekliyor",
   approved_bolge: "Koord. bekliyor",
   rejected_bolge: "Red (bölge)",
   approved_koord: "Onaylandı",
@@ -63,7 +65,8 @@ const STATUS_LABELS: Record<ExpenseStatus, string> = {
 const EXPENSE_TYPES: ExpenseType[] = ["Ulaşım", "Konaklama", "Yemek", "Malzeme", "Diğer"];
 
 const FILTER_STATUS_OPTIONS: { value: ExpenseStatus; label: string }[] = [
-  { value: "pending_bolge", label: "Bekleyen" },
+  { value: "pending_bolge", label: "Bekleyen (bölge)" },
+  { value: "pending_koord", label: "Bekleyen (TÇK)" },
   { value: "approved_bolge", label: "Bölge Onaylı" },
   { value: "approved_koord", label: "Koordinatör Onaylı" },
   { value: "paid", label: "Ödendi" },
@@ -155,7 +158,7 @@ export default function YkPage() {
   const pendingCount = useMemo(
     () =>
       expenses.filter((e) =>
-        ["pending_bolge", "approved_bolge"].includes(e.status)
+        ["pending_bolge", "pending_koord", "approved_bolge"].includes(e.status)
       ).length,
     [expenses]
   );
@@ -205,6 +208,7 @@ export default function YkPage() {
     (
       [
         "pending_bolge",
+        "pending_koord",
         "approved_bolge",
         "rejected_bolge",
         "approved_koord",
@@ -238,7 +242,7 @@ export default function YkPage() {
       byRegion[b].count += 1;
       if (["approved_bolge", "approved_koord", "paid"].includes(e.status))
         byRegion[b].approved += 1;
-      else if (["pending_bolge", "approved_bolge"].includes(e.status))
+      else if (["pending_bolge", "pending_koord", "approved_bolge"].includes(e.status))
         byRegion[b].pending += 1;
       else byRegion[b].rejected += 1;
     });
@@ -310,7 +314,7 @@ export default function YkPage() {
       byIl[il].count += 1;
       if (["approved_bolge", "approved_koord", "paid"].includes(e.status))
         byIl[il].approved += 1;
-      else if (["pending_bolge", "approved_bolge"].includes(e.status))
+      else if (["pending_bolge", "pending_koord", "approved_bolge"].includes(e.status))
         byIl[il].pending += 1;
       else byIl[il].rejected += 1;
     });

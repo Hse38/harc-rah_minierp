@@ -3,6 +3,7 @@ import type { ExpenseStatus } from "@/types";
 
 const LABELS: Record<ExpenseStatus, string> = {
   pending_bolge: "Bölge Onayı Bekleniyor",
+  pending_koord: "TÇK Onayı Bekleniyor",
   approved_bolge: "Koordinatör Onayı Bekleniyor",
   rejected_bolge: "Reddedildi",
   approved_koord: "Onaylandı",
@@ -15,6 +16,7 @@ const VARIANTS: Record<
   "default" | "secondary" | "destructive" | "outline" | "success" | "warning"
 > = {
   pending_bolge: "warning",
+  pending_koord: "secondary",
   approved_bolge: "secondary",
   rejected_bolge: "destructive",
   approved_koord: "success",

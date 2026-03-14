@@ -79,7 +79,7 @@ export function KoordinatorClient({
   );
 
   const awaiting = useMemo(
-    () => allExpenses.filter((e) => e.status === "approved_bolge"),
+    () => allExpenses.filter((e) => e.status === "approved_bolge" || e.status === "pending_koord"),
     [allExpenses]
   );
   const completed = useMemo(

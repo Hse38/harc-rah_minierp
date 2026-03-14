@@ -17,6 +17,7 @@ import { ChevronRight, FileImage } from "lucide-react";
 
 const STATUS_LABELS: Record<string, string> = {
   pending_bolge: "Bölge Onayı Bekleniyor",
+  pending_koord: "TÇK Onayı Bekleniyor",
   approved_bolge: "Koordinatör Onayı Bekleniyor",
   rejected_bolge: "Reddedildi (bölge)",
   approved_koord: "Onaylandı",

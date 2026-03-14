@@ -8,6 +8,7 @@ export type Role =
 
 export type ExpenseStatus =
   | "pending_bolge"
+  | "pending_koord"   /* bölge sorumlusu açtı, TÇK onayı bekliyor */
   | "approved_bolge"
   | "rejected_bolge"
   | "approved_koord"

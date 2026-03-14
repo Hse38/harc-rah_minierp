@@ -12,6 +12,7 @@ export type ExpenseRealtimeFilter =
 
 const STATUS_LABELS: Record<string, string> = {
   pending_bolge: "Bölge bekliyor",
+  pending_koord: "TÇK bekliyor",
   approved_bolge: "Bölge onayı",
   approved_koord: "Onaylandı",
   paid: "Ödendi",
