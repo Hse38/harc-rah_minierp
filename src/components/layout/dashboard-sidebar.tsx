@@ -110,14 +110,14 @@ export function DashboardSidebar({
   return (
     <aside className="hidden md:flex md:flex-col md:fixed md:left-0 md:top-0 md:bottom-0 w-40 lg:w-64 bg-white border-r border-slate-200 z-50">
       <div className="p-4 lg:p-5 border-b border-slate-100">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-lg bg-[#2563EB] flex items-center justify-center overflow-hidden shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 lg:w-11 lg:h-11 rounded-xl bg-slate-100 border border-slate-200/80 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
             <Image
               src={T3_LOGO_URL}
               alt="TAMGA"
-              width={36}
-              height={36}
-              className="object-contain"
+              width={40}
+              height={40}
+              className="object-contain p-0.5"
             />
           </div>
           <span className="font-bold text-slate-900 text-base lg:text-lg tracking-tight uppercase">TAMGA</span>

@@ -34,16 +34,13 @@ export default function Loading() {
       <div
         className={`flex flex-col items-center relative z-10 transition-opacity duration-300 ${mounted ? "opacity-100" : "opacity-0"}`}
       >
-        <div
-          className="w-20 h-20 rounded-lg flex items-center justify-center overflow-hidden animate-pulse"
-          style={{ background: "#2563EB" }}
-        >
+        <div className="w-20 h-20 rounded-xl bg-slate-100 border border-slate-200/80 flex items-center justify-center overflow-hidden shadow-sm animate-pulse">
           <Image
             src={T3_LOGO_URL}
-            alt="Logo"
-            width={80}
-            height={80}
-            className="object-contain"
+            alt="TAMGA"
+            width={72}
+            height={72}
+            className="object-contain p-1"
           />
         </div>
         <p className="text-white text-xl font-bold mt-4 tracking-tight uppercase">TAMGA</p>
