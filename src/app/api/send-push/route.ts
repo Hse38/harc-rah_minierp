@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "VAPID not configured" }, { status: 500 });
   }
   try {
-    const body = (await request.json()) as {
+    const payload = (await request.json()) as {
       recipient_id?: string;
       recipient_role?: string;
       expense_id?: string;
@@ -26,20 +26,20 @@ export async function POST(request: Request) {
       body: string;
       url?: string;
     };
-    const { title, body, url = "/" } = body;
+    const { title, body, url = "/" } = payload;
     if (!title) return NextResponse.json({ error: "title required" }, { status: 400 });
 
     const supabase = createAdminClient();
     let userIds: string[] = [];
 
-    if (body.recipient_id) {
-      userIds = [body.recipient_id];
-    } else if (body.recipient_role) {
-      if (body.expense_id && body.recipient_role === "bolge") {
+    if (payload.recipient_id) {
+      userIds = [payload.recipient_id];
+    } else if (payload.recipient_role) {
+      if (payload.expense_id && payload.recipient_role === "bolge") {
         const { data: expense } = await supabase
           .from("expenses")
           .select("bolge")
-          .eq("id", body.expense_id)
+          .eq("id", payload.expense_id)
           .single();
         const bolge = (expense as { bolge?: string } | null)?.bolge;
         if (bolge) {
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
         const { data: profiles } = await supabase
           .from("profiles")
           .select("id")
-          .eq("role", body.recipient_role);
+          .eq("role", payload.recipient_role);
         userIds = (profiles ?? []).map((p: { id: string }) => p.id);
       }
     }
@@ -67,13 +67,13 @@ export async function POST(request: Request) {
       .select("subscription")
       .in("user_id", userIds);
 
-    const payload = JSON.stringify({ title, body, url, tag: "harcirah" });
+    const pushPayload = JSON.stringify({ title, body, url, tag: "harcirah" });
     let sent = 0;
     for (const row of rows ?? []) {
       const sub = (row as { subscription: unknown }).subscription;
       if (!sub || typeof sub !== "object") continue;
       try {
-        await webpush.sendNotification(sub as webpush.PushSubscription, payload);
+        await webpush.sendNotification(sub as webpush.PushSubscription, pushPayload);
         sent++;
       } catch {
         // subscription expired/invalid, skip
