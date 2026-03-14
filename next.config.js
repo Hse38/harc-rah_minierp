@@ -7,7 +7,7 @@ const nextConfig = {
         destination: '/login',
         permanent: false,
       },
-    ];
+    ]
   },
-};
-module.exports = nextConfig;
+}
+module.exports = nextConfig
