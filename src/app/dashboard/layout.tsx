@@ -4,25 +4,47 @@ import { Topbar } from "@/components/layout/topbar";
 import { PushPermissionBanner } from "@/components/layout/push-permission-banner";
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
 
+function isNextRedirect(e: unknown): boolean {
+  return !!(
+    e &&
+    typeof e === "object" &&
+    "digest" in e &&
+    String((e as { digest?: string }).digest).startsWith("NEXT_REDIRECT")
+  );
+}
+
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
+  let user: { id: string } | null = null;
+  let fullName = "";
+  let role = "deneyap";
+
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user: u },
+    } = await supabase.auth.getUser();
+    if (!u) {
+      redirect("/login");
+    }
+    user = u;
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name, role")
+      .eq("id", u.id)
+      .single();
+    fullName = (profile as { full_name?: string } | null)?.full_name ?? "";
+    role = (profile as { role?: string } | null)?.role ?? "deneyap";
+  } catch (e) {
+    if (isNextRedirect(e)) throw e;
+    console.error("[DashboardLayout]", e);
     redirect("/login");
   }
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name, role")
-    .eq("id", user.id)
-    .single();
-  const fullName = (profile as { full_name?: string } | null)?.full_name ?? "";
-  const role = (profile as { role?: string } | null)?.role ?? "deneyap";
+
+  if (!user) redirect("/login");
 
   return (
     <div className="min-h-screen bg-slate-50 md:flex">
