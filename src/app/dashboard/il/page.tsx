@@ -226,7 +226,7 @@ export default function IlPage() {
           { id: "list", label: "Harcamalar", icon: List },
         ]}
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={(tab) => setActiveTab(tab as "dashboard" | "list")}
       />
     </div>
   );

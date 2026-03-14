@@ -31,6 +31,8 @@ export default function DeneyapPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"dashboard" | "list">("dashboard");
   const [submitterId, setSubmitterId] = useState<string | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<Expense | null>(null);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     const t = searchParams.get("tab");
@@ -286,7 +288,7 @@ export default function DeneyapPage() {
           }
           confirmLabel="Evet, iptal et"
           variant="destructive"
-          onConfirm={() => cancelTarget && handleCancelExpense(cancelTarget)}
+          onConfirm={() => { if (cancelTarget) void handleCancelExpense(cancelTarget); }}
           loading={cancelling}
         />
       </div>

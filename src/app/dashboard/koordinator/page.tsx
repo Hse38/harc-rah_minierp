@@ -728,7 +728,7 @@ export default function KoordinatorPage() {
           { id: "limits", label: "Limitler", icon: Wallet },
         ]}
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={(tab) => setActiveTab(tab as "dashboard" | "awaiting" | "completed" | "limits")}
       />
 
       <ApprovalModal

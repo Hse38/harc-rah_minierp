@@ -20,7 +20,7 @@ export async function requestPushPermission(
 
   const subscription = await registration.pushManager.subscribe({
     userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC),
+    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC) as BufferSource,
   });
 
   await supabase.from("push_subscriptions").upsert(
