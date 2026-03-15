@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/expenses/status-badge";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, bolgeAdi } from "@/lib/utils";
 
 export function ExpenseDetailModal({
   expense,
@@ -41,7 +41,7 @@ export function ExpenseDetailModal({
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">İl / Bölge</span>
-            <span>{expense.il} · {expense.bolge}</span>
+            <span>{expense.il} · {bolgeAdi(expense.bolge)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">Tür</span>

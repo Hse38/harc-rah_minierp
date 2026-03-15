@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { NotificationBell } from "./notification-bell";
 import { LogOut } from "lucide-react";
+import { useLang } from "@/contexts/LanguageContext";
+import { t } from "@/lib/i18n";
 
 const ROLE_LABELS: Record<string, string> = {
   deneyap: "Deneyap",
@@ -28,6 +30,7 @@ export function Topbar({
 }) {
   const router = useRouter();
   const supabase = createClient();
+  const { lang } = useLang();
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -63,7 +66,7 @@ export function Topbar({
             variant="ghost"
             size="icon"
             onClick={handleLogout}
-            aria-label="Çıkış"
+            aria-label={t("logout", lang)}
             className="lg:hover:bg-gray-100"
           >
             <LogOut className="h-5 w-5" />

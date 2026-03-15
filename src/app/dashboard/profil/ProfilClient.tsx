@@ -17,7 +17,8 @@ import {
   PROFILE_LANGUAGE_OPTIONS,
   PROFILE_LANG_STORAGE_KEY,
 } from "@/lib/i18n/profile";
-import { regionToTurkish } from "@/lib/region-names";
+import { useLang } from "@/contexts/LanguageContext";
+import { bolgeAdi } from "@/lib/utils";
 import { validatePhone } from "./phone-validate";
 
 function getInitials(fullName: string): string {
@@ -62,10 +63,9 @@ export function ProfilClient({
   sessionCreatedAt,
 }: ProfilClientProps) {
   const supabase = createClient();
+  const { lang: contextLang, setLang: setContextLang } = useLang();
+  const lang = (contextLang as ProfileLanguage) || "tr";
   const [profile, setProfile] = useState<Profile | null>(initialProfile);
-  const [lang, setLang] = useState<ProfileLanguage>(
-    (initialProfile?.language as ProfileLanguage) ?? "tr"
-  );
   const [iban, setIban] = useState(initialProfile?.iban ?? "");
   const [phone, setPhone] = useState(initialProfile?.phone ?? "");
   const [newPassword, setNewPassword] = useState("");
@@ -88,11 +88,11 @@ export function ProfilClient({
   useEffect(() => {
     const stored = typeof window !== "undefined" ? localStorage.getItem(PROFILE_LANG_STORAGE_KEY) : null;
     if (stored && (stored === "tr" || stored === "az" || stored === "ky")) {
-      setLang(stored as ProfileLanguage);
-    } else if (initialProfile?.language) {
-      setLang(initialProfile.language as ProfileLanguage);
+      setContextLang(stored as ProfileLanguage);
+    } else if (initialProfile?.language && (initialProfile.language === "az" || initialProfile.language === "ky")) {
+      setContextLang(initialProfile.language as ProfileLanguage);
     }
-  }, [initialProfile?.language]);
+  }, [initialProfile?.language, setContextLang]);
 
   const ibanError = useMemo(() => {
     if (!iban.trim()) return null;
@@ -129,7 +129,7 @@ export function ProfilClient({
   const canSave = ((hasValidProfile || hasValidPassword) && !saving) ?? false;
 
   const handleLangChange = (l: ProfileLanguage) => {
-    setLang(l);
+    setContextLang(l);
     if (typeof window !== "undefined") {
       localStorage.setItem(PROFILE_LANG_STORAGE_KEY, l);
     }
@@ -255,7 +255,7 @@ export function ProfilClient({
               </Badge>
               {(profile.il || profile.bolge) && (
                 <p className="mt-2 text-sm text-slate-600">
-                  {[profile.il, profile.bolge ? regionToTurkish(profile.bolge) : null]
+                  {[profile.il, profile.bolge ? bolgeAdi(profile.bolge) : null]
                     .filter(Boolean)
                     .join(" · ")}
                 </p>

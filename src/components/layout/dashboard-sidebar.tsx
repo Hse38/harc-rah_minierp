@@ -19,6 +19,8 @@ import {
   User,
   LogOut,
 } from "lucide-react";
+import { useLang } from "@/contexts/LanguageContext";
+import { t, type TranslationKey } from "@/lib/i18n";
 
 const T3_LOGO_URL = "https://raw.githubusercontent.com/Hse38/t3logo/main/1.T3%20dikey.png";
 
@@ -31,50 +33,50 @@ const ROLE_LABELS: Record<string, string> = {
   yk: "YK Başkanı",
 };
 
-type NavItem = { label: string; href: string; icon: React.ComponentType<{ className?: string }> };
+type NavItem = { labelKey: TranslationKey; href: string; icon: React.ComponentType<{ className?: string }> };
 
 function getNavForRole(role: string): NavItem[] {
   switch (role) {
     case "deneyap":
       return [
-        { label: "Dashboard", href: "/dashboard/deneyap?tab=dashboard", icon: BarChart2 },
-        { label: "Harcamalarım", href: "/dashboard/deneyap?tab=list", icon: List },
-        { label: "Yeni Harcama", href: "/dashboard/deneyap/yeni", icon: Plus },
+        { labelKey: "dashboard", href: "/dashboard/deneyap?tab=dashboard", icon: BarChart2 },
+        { labelKey: "myExpenses", href: "/dashboard/deneyap?tab=list", icon: List },
+        { labelKey: "newExpense", href: "/dashboard/deneyap/yeni", icon: Plus },
       ];
     case "il":
       return [
-        { label: "Dashboard", href: "/dashboard/il?tab=dashboard", icon: BarChart2 },
-        { label: "Harcamalar", href: "/dashboard/il?tab=list", icon: List },
-        { label: "Yeni Harcama", href: "/dashboard/il/yeni", icon: Plus },
+        { labelKey: "dashboard", href: "/dashboard/il?tab=dashboard", icon: BarChart2 },
+        { labelKey: "myExpenses", href: "/dashboard/il?tab=list", icon: List },
+        { labelKey: "newExpense", href: "/dashboard/il/yeni", icon: Plus },
       ];
     case "bolge":
       return [
-        { label: "Dashboard", href: "/dashboard/bolge?tab=dashboard", icon: BarChart2 },
-        { label: "Bekleyenler", href: "/dashboard/bolge?tab=pending", icon: Clock },
-        { label: "Sonuçlananlar", href: "/dashboard/bolge?tab=done", icon: CheckCircle },
-        { label: "Yeni Harcama", href: "/dashboard/bolge/yeni", icon: Plus },
+        { labelKey: "dashboard", href: "/dashboard/bolge?tab=dashboard", icon: BarChart2 },
+        { labelKey: "pending", href: "/dashboard/bolge?tab=pending", icon: Clock },
+        { labelKey: "done", href: "/dashboard/bolge?tab=done", icon: CheckCircle },
+        { labelKey: "newExpense", href: "/dashboard/bolge/yeni", icon: Plus },
       ];
     case "koordinator":
       return [
-        { label: "Dashboard", href: "/dashboard/koordinator?tab=dashboard", icon: BarChart2 },
-        { label: "Onay Bekleyen", href: "/dashboard/koordinator?tab=awaiting", icon: Clock },
-        { label: "Tamamlananlar", href: "/dashboard/koordinator?tab=completed", icon: CheckCircle },
-        { label: "Limitler", href: "/dashboard/koordinator?tab=limits", icon: Wallet },
+        { labelKey: "dashboard", href: "/dashboard/koordinator?tab=dashboard", icon: BarChart2 },
+        { labelKey: "awaiting", href: "/dashboard/koordinator?tab=awaiting", icon: Clock },
+        { labelKey: "completed", href: "/dashboard/koordinator?tab=completed", icon: CheckCircle },
+        { labelKey: "limits", href: "/dashboard/koordinator?tab=limits", icon: Wallet },
       ];
     case "muhasebe":
       return [
-        { label: "Bekleyenler", href: "/dashboard/muhasebe?tab=awaiting", icon: Clock },
-        { label: "Ödenenler", href: "/dashboard/muhasebe?tab=paid", icon: CheckCircle },
-        { label: "Export", href: "/dashboard/muhasebe?tab=export", icon: Download },
+        { labelKey: "pending", href: "/dashboard/muhasebe?tab=awaiting", icon: Clock },
+        { labelKey: "paidTab", href: "/dashboard/muhasebe?tab=paid", icon: CheckCircle },
+        { labelKey: "export", href: "/dashboard/muhasebe?tab=export", icon: Download },
       ];
     case "yk":
       return [
-        { label: "Genel", href: "/dashboard/yk?tab=genel", icon: LayoutDashboard },
-        { label: "Bölgeler", href: "/dashboard/yk?tab=bolgeler", icon: MapPin },
-        { label: "Harcamalar", href: "/dashboard/yk?tab=harcamalar", icon: List },
+        { labelKey: "general", href: "/dashboard/yk?tab=genel", icon: LayoutDashboard },
+        { labelKey: "regions", href: "/dashboard/yk?tab=bolgeler", icon: MapPin },
+        { labelKey: "myExpenses", href: "/dashboard/yk?tab=harcamalar", icon: List },
       ];
     default:
-      return [{ label: "Ana Sayfa", href: "/dashboard", icon: BarChart2 }];
+      return [{ labelKey: "dashboard", href: "/dashboard", icon: BarChart2 }];
   }
 }
 
@@ -89,6 +91,7 @@ export function DashboardSidebar({
   const searchParams = useSearchParams();
   const router = useRouter();
   const supabase = createClient();
+  const { lang } = useLang();
   const tab = searchParams.get("tab");
   const navItems = getNavForRole(userRole);
 
@@ -148,7 +151,7 @@ export function DashboardSidebar({
               }`}
             >
               <Icon className="h-4 w-4 shrink-0" />
-              <span className="truncate">{item.label}</span>
+              <span className="truncate">{t(item.labelKey, lang)}</span>
             </Link>
           );
         })}
@@ -160,7 +163,7 @@ export function DashboardSidebar({
           className="flex items-center gap-2 rounded-lg px-3 py-2 lg:py-2.5 text-sm text-slate-600 hover:bg-slate-100 transition-colors"
         >
           <User className="h-4 w-4 shrink-0" />
-          <span className="truncate">Profil</span>
+          <span className="truncate">{t("profile", lang)}</span>
         </Link>
         <button
           type="button"
@@ -168,7 +171,7 @@ export function DashboardSidebar({
           className="w-full flex items-center gap-2 rounded-lg px-3 py-2 lg:py-2.5 text-sm text-slate-600 hover:bg-slate-100 transition-colors text-left"
         >
           <LogOut className="h-4 w-4 shrink-0" />
-          <span className="truncate">Çıkış</span>
+          <span className="truncate">{t("logout", lang)}</span>
         </button>
       </div>
     </aside>

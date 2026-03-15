@@ -14,7 +14,8 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { checkLimitAfterApprove } from "@/lib/check-limit";
-import { REGION_LIMIT_SLUGS, regionToSlug, regionToTurkish } from "@/lib/region-names";
+import { REGION_LIMIT_SLUGS, regionToSlug } from "@/lib/region-names";
+import { bolgeAdi } from "@/lib/utils";
 import { ApprovalModal } from "@/components/approval/approval-modal";
 import { ReceiptLightbox } from "@/components/expenses/receipt-lightbox";
 import { Check, X, BarChart2, Clock, CheckCircle, FileImage, Wallet, Pencil, ChevronRight, Activity } from "lucide-react";
@@ -150,7 +151,7 @@ export function KoordinatorClient({
         byRegion[b].push(hours);
       });
     return Object.entries(byRegion).map(([bolge, hours]) => ({
-      bolge: regionToTurkish(bolge),
+      bolge: bolgeAdi(bolge),
       ortalamaSaat: hours.length ? hours.reduce((a, b) => a + b, 0) / hours.length : 0,
     }));
   }, [allExpenses]);
@@ -277,7 +278,7 @@ export function KoordinatorClient({
       }
       setRegionLimits((prev) => ({ ...prev, [slug]: value }));
       setEditingSlug(null);
-      toast.success(`${regionToTurkish(slug)} limiti güncellendi.`);
+      toast.success(`${bolgeAdi(slug)} limiti güncellendi.`);
     } catch {
       toast.error("Güncellenemedi.");
     } finally {
@@ -524,7 +525,7 @@ export function KoordinatorClient({
                     <div className="flex justify-between items-start gap-2">
                       <div>
                         <p className="font-semibold">{e.submitter_name}</p>
-                        <p className="text-sm text-slate-500">{e.expense_number} · {e.il ?? "—"} · {regionToTurkish(e.bolge)} · {e.expense_type}</p>
+                        <p className="text-sm text-slate-500">{e.expense_number} · {e.il ?? "—"} · {bolgeAdi(e.bolge)} · {e.expense_type}</p>
                         <p className="text-sm text-slate-600 mt-1">{formatCurrency(e.amount)} · {formatDate(e.created_at)}</p>
                       </div>
                       <div className="flex flex-col items-end gap-1">
@@ -645,7 +646,7 @@ export function KoordinatorClient({
                   <CardContent className="p-4 space-y-3">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <h3 className="text-base font-semibold text-slate-800">{regionToTurkish(slug)}</h3>
+                        <h3 className="text-base font-semibold text-slate-800">{bolgeAdi(slug)}</h3>
                         <p className="text-xs text-slate-500 mt-1">
                           {formatCurrency(spent)} / {formatCurrency(limit)}
                         </p>

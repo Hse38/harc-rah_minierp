@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Expense } from "@/types";
-import { regionToSlug, regionToTurkish } from "./region-names";
+import { regionToSlug } from "./region-names";
+import { bolgeAdi } from "./utils";
 import { getRecipientIds } from "./notification-recipients";
 
 export type CheckLimitResult = { notified: boolean; pct?: number; message?: string };
@@ -39,7 +40,7 @@ export async function checkLimitAfterApprove(
     .reduce((s, e) => s + Number(e.amount), 0);
 
   const pct = (sameRegionSum / limitAmount) * 100;
-  const bolgeTr = regionToTurkish(expense.bolge);
+  const bolgeTr = bolgeAdi(expense.bolge);
 
   let message: string | null = null;
   if (pct >= 100) {

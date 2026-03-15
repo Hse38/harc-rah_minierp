@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { Topbar } from "@/components/layout/topbar";
 import { PushPermissionBanner } from "@/components/layout/push-permission-banner";
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
+import { LanguageProvider } from "@/contexts/LanguageContext";
+import type { Language } from "@/lib/i18n";
 
 function isNextRedirect(e: unknown): boolean {
   return !!(
@@ -21,6 +23,7 @@ export default async function DashboardLayout({
   let user: { id: string } | null = null;
   let fullName = "";
   let role = "deneyap";
+  let profileLang: string | undefined;
 
   try {
     const supabase = await createClient();
@@ -33,11 +36,13 @@ export default async function DashboardLayout({
     user = u;
     const { data: profile } = await supabase
       .from("profiles")
-      .select("full_name, role")
+      .select("full_name, role, language")
       .eq("id", u.id)
       .single();
-    fullName = (profile as { full_name?: string } | null)?.full_name ?? "";
-    role = (profile as { role?: string } | null)?.role ?? "deneyap";
+    const p = profile as { full_name?: string; role?: string; language?: string } | null;
+    fullName = p?.full_name ?? "";
+    role = p?.role ?? "deneyap";
+    profileLang = p?.language;
   } catch (e) {
     if (isNextRedirect(e)) throw e;
     console.error("[DashboardLayout]", e);
@@ -46,20 +51,25 @@ export default async function DashboardLayout({
 
   if (!user) redirect("/login");
 
+  const initialLang: Language =
+    profileLang === "az" || profileLang === "ky" ? profileLang : "tr";
+
   return (
-    <div className="min-h-screen bg-slate-50 md:flex">
-      <DashboardSidebar userName={fullName} userRole={role} />
-      <div className="w-full max-w-[430px] mx-auto shadow-lg md:ml-40 lg:ml-64 md:max-w-[480px] md:mx-0 lg:max-w-none lg:flex-1 lg:min-w-0 flex flex-col">
-        <Topbar
-          userName={fullName}
-          userRole={role}
-          userId={user.id}
-        />
-        <PushPermissionBanner userId={user.id} />
-        <main className="p-4 pb-safe lg:max-w-7xl lg:mx-auto lg:px-8 lg:py-6">
-          {children}
-        </main>
+    <LanguageProvider initialLang={initialLang}>
+      <div className="min-h-screen bg-slate-50 md:flex">
+        <DashboardSidebar userName={fullName} userRole={role} />
+        <div className="w-full max-w-[430px] mx-auto shadow-lg md:ml-40 lg:ml-64 md:max-w-[480px] md:mx-0 lg:max-w-none lg:flex-1 lg:min-w-0 flex flex-col">
+          <Topbar
+            userName={fullName}
+            userRole={role}
+            userId={user.id}
+          />
+          <PushPermissionBanner userId={user.id} />
+          <main className="flex-1 p-4 pb-safe md:p-6 md:px-8 max-w-6xl mx-auto w-full">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </LanguageProvider>
   );
 }

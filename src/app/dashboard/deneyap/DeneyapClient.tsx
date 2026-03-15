@@ -17,7 +17,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { AnalyticsChart } from "@/components/dashboard/AnalyticsChart";
 import { useExpensesRealtime, getExpenseStatusLabel } from "@/lib/realtime-expenses";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, bolgeAdi } from "@/lib/utils";
 import { BarChart2, List, Plus, Pencil, XCircle, Send } from "lucide-react";
 import { toast } from "sonner";
 import type { DashboardDeneyapResponse } from "@/app/api/dashboard/route";
@@ -246,7 +246,7 @@ export function DeneyapClient({
                     Merhaba, {profile?.full_name?.trim() || "Kullanıcı"} 👋
                   </h1>
                   <p className="text-sm text-gray-500 mt-0.5">
-                    {[profile?.il || "Deneyap", profile?.bolge || ""].filter(Boolean).join(" • ") || "Deneyap"}
+                    {[profile?.il || "Deneyap", profile?.bolge ? bolgeAdi(profile.bolge) : ""].filter(Boolean).join(" • ") || "Deneyap"}
                   </p>
                 </div>
                 <p className="text-sm text-gray-500 lg:shrink-0">{todayStr}</p>

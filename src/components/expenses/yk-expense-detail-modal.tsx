@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/expenses/status-badge";
 import { ReceiptLightbox } from "@/components/expenses/receipt-lightbox";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, bolgeAdi } from "@/lib/utils";
 import { ChevronRight, FileImage } from "lucide-react";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -69,7 +69,7 @@ export function YkExpenseDetailModal({
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">İl / Bölge</span>
-              <span>{expense.il} · {expense.bolge}</span>
+              <span>{expense.il} · {bolgeAdi(expense.bolge)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Tür</span>

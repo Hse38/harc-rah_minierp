@@ -14,8 +14,8 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { YkExpenseDetailModal } from "@/components/expenses/yk-expense-detail-modal";
 import { BOLGELER_YK, BOLGE_ILLER } from "@/lib/bolge-iller";
-import { REGION_LIMIT_SLUGS, regionToSlug, regionToTurkish } from "@/lib/region-names";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { REGION_LIMIT_SLUGS, regionToSlug } from "@/lib/region-names";
+import { bolgeAdi, cn, formatCurrency, formatDate } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -39,7 +39,9 @@ import {
   CartesianGrid,
 } from "recharts";
 import { LayoutDashboard, MapPin, List, TrendingUp, TrendingDown, ChevronDown, ChevronUp, X, BarChart2, CreditCard, Activity } from "lucide-react";
-import { cn } from "@/lib/utils";
+
+/** Tüm bölgeler (Bölgeler sekmesinde hepsini göstermek için) */
+const TUM_BOLGE_SLUGS = [...REGION_LIMIT_SLUGS];
 import { DASHBOARD_COLORS, CHART_COLORS, formatCurrencyTR } from "@/lib/dashboard-theme";
 import { EXPENSE_FIELDS_FULL } from "@/lib/expense-fields";
 import Link from "next/link";
@@ -290,11 +292,19 @@ export default function YkPage() {
 
   const regionBarDataForChart = useMemo(() => {
     return regionCards.map((r) => ({
-      bolge: regionToTurkish(r.bolge),
+      bolge: bolgeAdi(r.bolge),
       Onaylanan: r.approved,
       Bekleyen: r.pending,
       Reddedilen: r.rejected,
     }));
+  }, [regionCards]);
+
+  /** Bölgeler sekmesi: tüm bölgeler, veri yoksa null */
+  const allRegionEntries = useMemo(() => {
+    return TUM_BOLGE_SLUGS.map((slug) => {
+      const card = regionCards.find((r) => regionToSlug(r.bolge) === slug);
+      return { slug, card };
+    });
   }, [regionCards]);
 
   const thisMonthStart = useMemo(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1), []);
@@ -624,20 +634,31 @@ export default function YkPage() {
             </div>
 
             <div className="space-y-4 md:grid md:grid-cols-2 md:gap-6 lg:grid-cols-3 md:space-y-0">
-              {regionCards.map((r) => {
-                const slug = regionToSlug(r.bolge);
-                const limit = slug ? (regionLimits[slug] ?? 0) : 0;
-                const spent = slug ? (thisMonthSpentByRegion[slug] ?? 0) : 0;
+              {allRegionEntries.map(({ slug, card }) => {
+                const limit = regionLimits[slug] ?? 0;
+                const spent = thisMonthSpentByRegion[slug] ?? 0;
                 const limitPct = limit > 0 ? (spent / limit) * 100 : 0;
                 const overLimit = limit > 0 && spent >= limit;
+                const name = bolgeAdi(slug);
+                if (!card) {
+                  return (
+                    <Card key={slug} className="rounded-2xl shadow-sm border-dashed border-slate-200">
+                      <CardContent className="p-4 space-y-2 flex flex-col items-center justify-center min-h-[140px]">
+                        <span className="font-medium md:text-xl md:font-bold text-slate-800">{name}</span>
+                        <p className="text-sm text-slate-500 text-center">Bu bölgede henüz harcama yapılmadı</p>
+                      </CardContent>
+                    </Card>
+                  );
+                }
+                const r = card;
                 return (
                   <Card
-                    key={r.bolge}
+                    key={slug}
                     className={`rounded-2xl shadow-sm ${overLimit ? "border-2 border-red-400" : ""}`}
                   >
                     <CardContent className="p-4 space-y-2">
                       <div className="flex justify-between items-start gap-2">
-                        <span className="font-medium md:text-xl md:font-bold text-slate-800">{regionToTurkish(r.bolge)}</span>
+                        <span className="font-medium md:text-xl md:font-bold text-slate-800">{name}</span>
                         {overLimit && (
                           <span className="rounded bg-red-600 px-2 py-0.5 text-xs font-bold text-white">
                             LİMİT AŞILDI
@@ -915,7 +936,7 @@ export default function YkPage() {
                     <CardContent className="p-3 flex flex-wrap items-center gap-2 text-sm">
                       <span className="font-mono text-xs text-slate-500 w-full">{e.expense_number}</span>
                       <span className="font-medium">{e.submitter_name}</span>
-                      <span className="text-slate-500">{e.il} · {e.bolge}</span>
+                      <span className="text-slate-500">{e.il} · {bolgeAdi(e.bolge)}</span>
                       <span className="text-slate-500">{e.expense_type}</span>
                       <span className="font-semibold text-slate-800 ml-auto">{formatCurrency(e.amount)}</span>
                       <StatusBadge status={e.status} />

@@ -94,7 +94,10 @@ async function getKoordinatorPayloadUncached(): Promise<DashboardKoordinatorResp
     supabase.from("region_limits").select("bolge, monthly_limit"),
   ]);
   if (expensesRes.error) return { expenses: [], regionLimits: {} };
-  if (limitsRes.error) return { expenses: (expensesRes.data ?? []) as Expense[], regionLimits: {} };
+  if (limitsRes.error) {
+    console.error("[getKoordinatorPayloadUncached] region_limits error:", limitsRes.error.message, limitsRes.error.code);
+    return { expenses: (expensesRes.data ?? []) as Expense[], regionLimits: {} };
+  }
   const regionLimits: Record<string, number> = {};
   (limitsRes.data ?? []).forEach((r: { bolge: string; monthly_limit: number }) => {
     regionLimits[r.bolge] = Number(r.monthly_limit);

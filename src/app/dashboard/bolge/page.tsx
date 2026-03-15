@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/expenses/status-badge";
 import { MetricCard } from "@/components/dashboard/metric-card";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, bolgeAdi } from "@/lib/utils";
 import { EXPENSE_FIELDS_FULL, PROFILE_FIELDS_FORM } from "@/lib/expense-fields";
 import { CHART_COLORS, CHART_GRID_STROKE, CHART_GRID_STROKE_DASHARRAY, formatCurrencyTR } from "@/lib/dashboard-theme";
 import { ApprovalModal } from "@/components/approval/approval-modal";
@@ -347,7 +347,7 @@ export default function BolgePage() {
             {/* Hero + period filter: sadece md+ */}
             <div className="hidden md:flex md:flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-gray-200">
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{profile?.bolge || "Bölge"}</h1>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{profile?.bolge ? bolgeAdi(profile.bolge) : "Bölge"}</h1>
                 <p className="text-sm text-gray-500 mt-0.5">{profile?.full_name} • Bölge Sorumlusu</p>
               </div>
               <div className="flex gap-2 shrink-0">
