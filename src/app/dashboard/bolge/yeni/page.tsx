@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { sendPushFromClient } from "@/lib/push-notifications";
 import { getRecipientIds } from "@/lib/notification-recipients";
+import { PROFILE_FIELDS_FORM } from "@/lib/expense-fields";
 import { formatCurrency } from "@/lib/utils";
 
 const EXPENSE_TYPES: ExpenseType[] = [
@@ -61,7 +62,7 @@ export default function BolgeYeniPage() {
       }
       const { data: p } = await supabase
         .from("profiles")
-        .select("*")
+        .select(PROFILE_FIELDS_FORM)
         .eq("id", user.id)
         .single();
       const pr = p as Profile | null;

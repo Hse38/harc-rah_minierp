@@ -44,14 +44,14 @@ export function NotificationBell({
     const fetchInitial = async () => {
       const { data } = await supabase
         .from("notifications")
-        .select("*")
+        .select("id,message,expense_id,is_read,created_at,recipient_id")
         .eq("recipient_id", userId)
         .order("created_at", { ascending: false })
         .limit(10);
       setNotifications((data as Notification[]) || []);
       const { count } = await supabase
         .from("notifications")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true })
         .eq("recipient_id", userId)
         .eq("is_read", false);
       setUnreadCount(count ?? 0);

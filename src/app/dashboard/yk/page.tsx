@@ -41,6 +41,7 @@ import {
 import { LayoutDashboard, MapPin, List, TrendingUp, TrendingDown, ChevronDown, ChevronUp, X, BarChart2, CreditCard, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DASHBOARD_COLORS, CHART_COLORS, formatCurrencyTR } from "@/lib/dashboard-theme";
+import { EXPENSE_FIELDS_FULL } from "@/lib/expense-fields";
 import Link from "next/link";
 
 type TimeFilter = "weekly" | "monthly" | "yearly" | "all";
@@ -426,7 +427,7 @@ export default function YkPage() {
   const refetch = useCallback(async () => {
     const { data } = await supabase
       .from("expenses")
-      .select("*")
+      .select(EXPENSE_FIELDS_FULL)
       .order("created_at", { ascending: false });
     setExpenses((data ?? []) as Expense[]);
     setLoading(false);

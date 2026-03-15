@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { ApprovalModal } from "@/components/approval/approval-modal";
 import { formatCurrency, formatDate, formatDateLong } from "@/lib/utils";
+import { EXPENSE_FIELDS_FULL } from "@/lib/expense-fields";
 import { Clock, CheckCircle, Download, Eye, EyeOff, FileImage, X, Check } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -118,7 +119,7 @@ export default function MuhasebePage() {
   const refetch = useCallback(async () => {
     const { data } = await supabase
       .from("expenses")
-      .select("*")
+      .select(EXPENSE_FIELDS_FULL)
       .in("status", ["approved_koord", "paid"])
       .order("created_at", { ascending: false });
     setExpenses((data ?? []) as Expense[]);

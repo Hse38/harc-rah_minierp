@@ -118,6 +118,7 @@ export function DashboardSidebar({
               width={40}
               height={40}
               className="object-contain p-0.5"
+              priority
             />
           </div>
           <span className="font-bold text-slate-900 text-base lg:text-lg tracking-tight uppercase">TAMGA</span>

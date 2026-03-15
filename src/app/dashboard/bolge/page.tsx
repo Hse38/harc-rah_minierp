@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/expenses/status-badge";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { EXPENSE_FIELDS_FULL, PROFILE_FIELDS_FORM } from "@/lib/expense-fields";
 import { CHART_COLORS, CHART_GRID_STROKE, CHART_GRID_STROKE_DASHARRAY, formatCurrencyTR } from "@/lib/dashboard-theme";
 import { ApprovalModal } from "@/components/approval/approval-modal";
 import { WarnModal } from "@/components/approval/warn-modal";
@@ -148,7 +149,7 @@ export default function BolgePage() {
       if (!user) return;
       const { data: p } = await supabase
         .from("profiles")
-        .select("*")
+        .select(PROFILE_FIELDS_FORM)
         .eq("id", user.id)
         .single();
       setProfile(p as Profile | null);
@@ -159,7 +160,7 @@ export default function BolgePage() {
     if (!bolge) return;
     const { data } = await supabase
       .from("expenses")
-      .select("*")
+      .select(EXPENSE_FIELDS_FULL)
       .eq("bolge", bolge)
       .order("created_at", { ascending: false });
     setAllExpenses((data ?? []) as Expense[]);

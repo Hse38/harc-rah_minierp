@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { sendPushFromClient } from "@/lib/push-notifications";
 import { getRecipientIds } from "@/lib/notification-recipients";
+import { EXPENSE_FIELDS_FULL, PROFILE_FIELDS_FORM } from "@/lib/expense-fields";
 
 const EXPENSE_TYPES: ExpenseType[] = [
   "Ulaşım",
@@ -73,14 +74,14 @@ export default function DeneyapDuzenlePage() {
       }
       const { data: p } = await supabase
         .from("profiles")
-        .select("*")
+        .select(PROFILE_FIELDS_FORM)
         .eq("id", user.id)
         .single();
       setProfile(p as Profile | null);
 
       const { data: ex, error } = await supabase
         .from("expenses")
-        .select("*")
+        .select(EXPENSE_FIELDS_FULL)
         .eq("id", id)
         .eq("submitter_id", user.id)
         .single();

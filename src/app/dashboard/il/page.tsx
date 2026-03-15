@@ -10,6 +10,7 @@ import { ExpenseCard } from "@/components/expenses/expense-card";
 import { StatusBadge } from "@/components/expenses/status-badge";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { formatCurrency } from "@/lib/utils";
+import { EXPENSE_FIELDS_FULL } from "@/lib/expense-fields";
 import type { ExpenseStatus } from "@/types";
 import { BarChart2, List, Plus } from "lucide-react";
 import {
@@ -60,7 +61,7 @@ export default function IlPage() {
     if (!il) return;
     const { data } = await supabase
       .from("expenses")
-      .select("*")
+      .select(EXPENSE_FIELDS_FULL)
       .eq("il", il)
       .order("created_at", { ascending: false });
     setExpenses((data ?? []) as Expense[]);

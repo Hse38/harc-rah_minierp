@@ -41,6 +41,7 @@ export default function Loading() {
             width={72}
             height={72}
             className="object-contain p-1"
+            priority
           />
         </div>
         <p className="text-white text-xl font-bold mt-4 tracking-tight uppercase">TAMGA</p>
