@@ -198,6 +198,7 @@ export default function BolgePage() {
         await supabase.from("notifications").insert(
           koordIds.map((recipient_id) => ({
             recipient_id,
+            recipient_role: "koordinator",
             message: `[${expense.expense_number}] bölge onaylandı, koordinatör onayı bekleniyor.`,
             expense_id: expense.id,
           }))
@@ -245,14 +246,16 @@ export default function BolgePage() {
         .eq("id", expense.id);
 
       const koordIds = await getRecipientIds(supabase, { role: "koordinator" });
-      const warnNotifications: { recipient_id: string; message: string; expense_id: string }[] = [
+      const warnNotifications: { recipient_id: string; recipient_role: string; message: string; expense_id: string }[] = [
         ...koordIds.map((recipient_id) => ({
           recipient_id,
+          recipient_role: "koordinator",
           message: `[${expense.expense_number}] bölge onaylandı (uyarılı), koordinatör onayı bekleniyor.`,
           expense_id: expense.id,
         })),
         {
           recipient_id: expense.submitter_id,
+          recipient_role: "deneyap",
           message: `[${expense.expense_number}] bölge sorumlusu notu: ${message}`,
           expense_id: expense.id,
         },
@@ -303,6 +306,7 @@ export default function BolgePage() {
 
       await supabase.from("notifications").insert({
         recipient_id: expense.submitter_id,
+        recipient_role: "deneyap",
         message: `[${expense.expense_number}] bölge sorumlusu tarafından reddedildi.`,
         expense_id: expenseId,
       });

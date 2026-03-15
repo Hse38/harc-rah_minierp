@@ -161,6 +161,7 @@ export default function BolgeYeniPage() {
             await supabase.from("notifications").insert(
               koordIds.map((recipient_id) => ({
                 recipient_id,
+                recipient_role: "koordinator",
                 message: `[${expenseNumber}] bölge sorumlusu tarafından açıldı, TÇK onayı bekliyor.`,
                 expense_id: expenseId,
               }))

@@ -300,14 +300,16 @@ export function KoordinatorClient({
         })
         .eq("id", expense.id);
       const muhasebeIds = await getRecipientIds(supabase, { role: "muhasebe" });
-      const approveNotifications: { recipient_id: string; message: string; expense_id: string }[] = [
+      const approveNotifications: { recipient_id: string; recipient_role: string; message: string; expense_id: string }[] = [
         ...muhasebeIds.map((recipient_id) => ({
           recipient_id,
+          recipient_role: "muhasebe",
           message: `[${expense.expense_number}] ödemeye hazır.`,
           expense_id: expense.id,
         })),
         {
           recipient_id: expense.submitter_id,
+          recipient_role: "deneyap",
           message: `[${expense.expense_number}] onaylandı.`,
           expense_id: expense.id,
         },
@@ -361,6 +363,7 @@ export function KoordinatorClient({
       await supabase.from("expenses").update({ status: "rejected_koord" }).eq("id", expense.id);
       await supabase.from("notifications").insert({
         recipient_id: expense.submitter_id,
+        recipient_role: "deneyap",
         message: `[${expense.expense_number}] koordinatör tarafından reddedildi.`,
         expense_id: expense.id,
       });

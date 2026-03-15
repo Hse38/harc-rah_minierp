@@ -56,8 +56,8 @@ export async function checkLimitAfterApprove(
   const koordIds = await getRecipientIds(supabase, { role: "koordinator" });
   const ykIds = await getRecipientIds(supabase, { role: "yk" });
   const rows = [
-    ...koordIds.map((recipient_id) => ({ recipient_id, message, expense_id: expense.id })),
-    ...ykIds.map((recipient_id) => ({ recipient_id, message, expense_id: expense.id })),
+    ...koordIds.map((recipient_id) => ({ recipient_id, recipient_role: "koordinator" as const, message, expense_id: expense.id })),
+    ...ykIds.map((recipient_id) => ({ recipient_id, recipient_role: "yk" as const, message, expense_id: expense.id })),
   ];
   if (rows.length > 0) {
     await supabase.from("notifications").insert(rows);

@@ -157,6 +157,7 @@ export default function DeneyapYeniPage() {
             await supabase.from("notifications").insert(
               bolgeRecipientIds.map((recipient_id) => ({
                 recipient_id,
+                recipient_role: "bolge",
                 message: `[${expenseNumber}] yeni harcama bölge onayı bekliyor.`,
                 expense_id: expenseId,
               }))

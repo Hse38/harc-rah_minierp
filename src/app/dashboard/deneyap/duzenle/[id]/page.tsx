@@ -167,6 +167,7 @@ export default function DeneyapDuzenlePage() {
             await supabase.from("notifications").insert(
               bolgeRecipientIds.map((recipient_id) => ({
                 recipient_id,
+                recipient_role: "bolge",
                 message: `[${expense.expense_number}] tekrar gönderildi, bölge onayı bekleniyor.`,
                 expense_id: expense.id,
               }))
