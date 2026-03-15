@@ -13,7 +13,7 @@ import { MetricCard } from "@/components/dashboard/metric-card";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { ApprovalModal } from "@/components/approval/approval-modal";
 import { WarnModal } from "@/components/approval/warn-modal";
-import { Receipt, Check, AlertCircle, X, BarChart2, Clock, CheckCircle } from "lucide-react";
+import { Receipt, Check, AlertCircle, X, BarChart2, Clock, CheckCircle, Plus } from "lucide-react";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { toast } from "sonner";
 import { sendPushFromClient } from "@/lib/push-notifications";
@@ -575,9 +575,10 @@ export default function BolgePage() {
           { id: "dashboard", label: "Dashboard", icon: BarChart2 },
           { id: "pending", label: "Bekleyenler", icon: Clock, badge: pending.length },
           { id: "done", label: "Sonuçlananlar", icon: CheckCircle },
+          { id: "yeni", label: "Yeni", icon: Plus, href: "/dashboard/bolge/yeni" },
         ]}
         activeTab={activeTab}
-        onTabChange={(tab) => setActiveTab(tab as "dashboard" | "pending" | "done")}
+        onTabChange={(tab) => tab !== "yeni" && setActiveTab(tab as "dashboard" | "pending" | "done")}
       />
 
       <ApprovalModal

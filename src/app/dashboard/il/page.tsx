@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useExpensesRealtime } from "@/lib/realtime-expenses";
 import type { Expense } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { ExpenseCard } from "@/components/expenses/expense-card";
@@ -10,7 +11,7 @@ import { StatusBadge } from "@/components/expenses/status-badge";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { formatCurrency } from "@/lib/utils";
 import type { ExpenseStatus } from "@/types";
-import { BarChart2, List } from "lucide-react";
+import { BarChart2, List, Plus } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -55,18 +56,26 @@ export default function IlPage() {
     })();
   }, [supabase]);
 
+  const refetch = useCallback(async () => {
+    if (!il) return;
+    const { data } = await supabase
+      .from("expenses")
+      .select("*")
+      .eq("il", il)
+      .order("created_at", { ascending: false });
+    setExpenses((data ?? []) as Expense[]);
+    setLoading(false);
+  }, [il, supabase]);
+
   useEffect(() => {
     if (!il) return;
-    (async () => {
-      const { data } = await supabase
-        .from("expenses")
-        .select("*")
-        .eq("il", il)
-        .order("created_at", { ascending: false });
-      setExpenses((data ?? []) as Expense[]);
-      setLoading(false);
-    })();
-  }, [il, supabase]);
+    refetch();
+  }, [il, refetch]);
+
+  useExpensesRealtime(supabase, {
+    filter: il ? { column: "il", value: il } : undefined,
+    refetch,
+  });
 
   const now = new Date();
   const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -224,9 +233,10 @@ export default function IlPage() {
         tabs={[
           { id: "dashboard", label: "Dashboard", icon: BarChart2 },
           { id: "list", label: "Harcamalar", icon: List },
+          { id: "yeni", label: "Yeni", icon: Plus, href: "/dashboard/il/yeni" },
         ]}
         activeTab={activeTab}
-        onTabChange={(tab) => setActiveTab(tab as "dashboard" | "list")}
+        onTabChange={(tab) => tab !== "yeni" && setActiveTab(tab as "dashboard" | "list")}
       />
     </div>
   );

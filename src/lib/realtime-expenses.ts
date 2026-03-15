@@ -7,6 +7,7 @@ import type { Expense } from "@/types";
 export type ExpenseRealtimeFilter =
   | { column: "submitter_id"; value: string }
   | { column: "bolge"; value: string }
+  | { column: "il"; value: string }
   | null
   | undefined;
 
