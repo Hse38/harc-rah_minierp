@@ -192,6 +192,7 @@ export default function BolgePage() {
         })
         .eq("id", expense.id);
 
+      console.log("Bölge onayı yapıldı, koordinatöre push gönderiliyor (client /api/notify çağrılıyor)...");
       notifyApi({
         toRole: "koordinator",
         expenseId: expense.id,

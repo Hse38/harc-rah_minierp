@@ -39,13 +39,14 @@ export async function sendNotification({
   const pushEnabled = prefs?.push_enabled !== false;
 
   if (pushEnabled) {
-    const { data: subRow } = await supabaseAdmin
+    const { data: subRow, error: subError } = await supabaseAdmin
       .from("push_subscriptions")
       .select("subscription")
       .eq("user_id", recipientId)
       .single();
 
     const sub = (subRow as { subscription?: unknown } | null)?.subscription;
+    console.log("[sendNotification] Subscription:", { recipientId, sub: sub != null, subError: subError?.message });
     if (sub) {
       try {
         const webpush = await import("web-push");
@@ -63,6 +64,8 @@ export async function sendNotification({
       } catch (e) {
         console.error("Push gönderilemedi:", e);
       }
+    } else {
+      console.log("[sendNotification] Subscription bulunamadı, push gönderilemiyor:", recipientId);
     }
   }
 }
@@ -71,14 +74,25 @@ export async function sendNotificationToRole(
   role: string,
   params: Omit<SendNotificationParams, "recipientId" | "recipientRole"> & { bolge?: string }
 ): Promise<void> {
+  if (role === "koordinator") {
+    console.log("Bölge onayı yapıldı, koordinatöre push gönderiliyor...");
+  }
+
   let query = supabaseAdmin.from("profiles").select("id").eq("role", role);
   if (role === "bolge" && params.bolge) {
     query = query.eq("bolge", params.bolge);
   }
-  const { data: users } = await query;
+  const { data: users, error: queryError } = await query;
+
+  if (role === "koordinator") {
+    console.log("Koordinatör kullanıcılar:", users, queryError?.message ?? queryError);
+  }
 
   const { bolge: _b, ...rest } = params;
   for (const user of users ?? []) {
+    if (role === "koordinator") {
+      console.log("Push gönderiliyor:", user.id);
+    }
     await sendNotification({
       ...rest,
       recipientId: user.id,
