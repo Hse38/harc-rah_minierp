@@ -17,6 +17,7 @@ import {
   PROFILE_LANGUAGE_OPTIONS,
   PROFILE_LANG_STORAGE_KEY,
 } from "@/lib/i18n/profile";
+import { regionToTurkish } from "@/lib/region-names";
 import { validatePhone } from "./phone-validate";
 
 function getInitials(fullName: string): string {
@@ -237,31 +238,38 @@ export function ProfilClient({
         <h1 className="text-lg font-semibold text-slate-800">{t.title}</h1>
       </div>
 
-      {/* 1. Kişisel bilgiler (readonly) */}
-      <Card className="rounded-2xl shadow-sm overflow-hidden">
-        <CardContent className="p-6 flex flex-col items-center">
-          <div className="w-20 h-20 rounded-full bg-[#2563EB] flex items-center justify-center text-2xl font-bold text-white shrink-0">
-            {getInitials(profile.full_name)}
-          </div>
-          <p className="mt-3 text-lg font-semibold text-slate-800">
-            {profile.full_name}
-          </p>
-          <p className="text-sm text-slate-500 mt-0.5">{email}</p>
-          <Badge variant="secondary" className="mt-2">
-            {roleLabel}
-          </Badge>
-          {(profile.il || profile.bolge) && (
-            <p className="mt-2 text-sm text-slate-600">
-              {[profile.il, profile.bolge].filter(Boolean).join(" · ")}
-            </p>
-          )}
-        </CardContent>
-      </Card>
+      <div className="md:flex md:gap-6 md:items-start">
+        {/* Sol: Avatar + kişisel bilgiler */}
+        <div className="md:w-1/3">
+          <Card className="rounded-2xl shadow-sm overflow-hidden md:sticky md:top-6">
+            <CardContent className="p-6 flex flex-col items-center">
+              <div className="w-20 h-20 rounded-full bg-[#2563EB] flex items-center justify-center text-2xl font-bold text-white shrink-0">
+                {getInitials(profile.full_name)}
+              </div>
+              <p className="mt-3 text-lg font-semibold text-slate-800">
+                {profile.full_name}
+              </p>
+              <p className="text-sm text-slate-500 mt-0.5">{email}</p>
+              <Badge variant="secondary" className="mt-2">
+                {roleLabel}
+              </Badge>
+              {(profile.il || profile.bolge) && (
+                <p className="mt-2 text-sm text-slate-600">
+                  {[profile.il, profile.bolge ? regionToTurkish(profile.bolge) : null]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
+        {/* Sağ: Düzenlenebilir + dil + bildirim + güvenlik */}
+        <div className="md:w-2/3 space-y-4">
       {/* 2. Düzenlenebilir: IBAN, Telefon */}
       <Card className="rounded-2xl shadow-sm">
         <CardContent className="p-4 space-y-4">
-          <h3 className="text-sm font-semibold text-slate-800">
+          <h3 className="text-sm font-semibold text-slate-800 md:text-lg md:font-semibold">
             {t.editableInfo}
           </h3>
           <div className="space-y-2">
@@ -305,7 +313,7 @@ export function ProfilClient({
       {/* 3. Dil tercihi */}
       <Card className="rounded-2xl shadow-sm">
         <CardContent className="p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-slate-800">
+          <h3 className="text-sm font-semibold text-slate-800 md:text-lg md:font-semibold">
             {t.languagePref}
           </h3>
           <div className="flex flex-wrap gap-2">
@@ -315,6 +323,7 @@ export function ProfilClient({
                 type="button"
                 variant={lang === opt.value ? "default" : "outline"}
                 size="sm"
+                className="md:px-6 md:py-3"
                 onClick={() => handleLangChange(opt.value)}
               >
                 <span className="mr-1">{opt.flag}</span>
@@ -328,7 +337,7 @@ export function ProfilClient({
       {/* 4. Bildirim tercihleri */}
       <Card className="rounded-2xl shadow-sm">
         <CardContent className="p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-slate-800">
+          <h3 className="text-sm font-semibold text-slate-800 md:text-lg md:font-semibold">
             {t.notificationPrefs}
           </h3>
           <label className="flex items-center gap-2 cursor-pointer">
@@ -393,7 +402,7 @@ export function ProfilClient({
       {/* 5. Güvenlik: Şifre değiştir */}
       <Card className="rounded-2xl shadow-sm">
         <CardContent className="p-4 space-y-4">
-          <h3 className="text-sm font-semibold text-slate-800">
+          <h3 className="text-sm font-semibold text-slate-800 md:text-lg md:font-semibold">
             {t.security}
           </h3>
           <p className="text-xs text-slate-500">{t.changePassword}</p>
@@ -435,7 +444,7 @@ export function ProfilClient({
       {/* 6. Son aktivite */}
       <Card className="rounded-2xl shadow-sm">
         <CardContent className="p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-slate-800">
+          <h3 className="text-sm font-semibold text-slate-800 md:text-lg md:font-semibold">
             {t.lastActivity}
           </h3>
           {sessionCreatedAt && (
@@ -457,13 +466,17 @@ export function ProfilClient({
         </CardContent>
       </Card>
 
-      <Button
-        className="w-full h-11"
-        disabled={!canSave || saving}
-        onClick={handleSave}
-      >
-        {saving ? t.saving : t.save}
-      </Button>
+      <div className="md:flex md:justify-end">
+        <Button
+          className="w-full md:w-auto h-11"
+          disabled={!canSave || saving}
+          onClick={handleSave}
+        >
+          {saving ? t.saving : t.save}
+        </Button>
+      </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -74,10 +74,12 @@ export default async function ProfilPage() {
     (user as { last_sign_in_at?: string }).last_sign_in_at ?? user.created_at;
 
   return (
-    <ProfilClient
-      initialProfile={profileData}
-      email={email}
-      sessionCreatedAt={lastSignInAt}
-    />
+    <div className="max-w-4xl mx-auto">
+      <ProfilClient
+        initialProfile={profileData}
+        email={email}
+        sessionCreatedAt={lastSignInAt}
+      />
+    </div>
   );
 }
