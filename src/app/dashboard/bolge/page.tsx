@@ -17,6 +17,7 @@ import { Receipt, Check, AlertCircle, X, BarChart2, Clock, CheckCircle, Plus } f
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { toast } from "sonner";
 import { sendPushFromClient } from "@/lib/push-notifications";
+import { getRecipientIds } from "@/lib/notification-recipients";
 import {
   Dialog,
   DialogContent,
@@ -190,11 +191,16 @@ export default function BolgePage() {
         })
         .eq("id", expense.id);
 
-      await supabase.from("notifications").insert({
-        recipient_role: "koordinator",
-        message: `[${expense.expense_number}] bölge onaylandı, koordinatör onayı bekleniyor.`,
-        expense_id: expense.id,
-      });
+      const koordIds = await getRecipientIds(supabase, { role: "koordinator" });
+      if (koordIds.length > 0) {
+        await supabase.from("notifications").insert(
+          koordIds.map((recipient_id) => ({
+            recipient_id,
+            message: `[${expense.expense_number}] bölge onaylandı, koordinatör onayı bekleniyor.`,
+            expense_id: expense.id,
+          }))
+        );
+      }
       sendPushFromClient({
         recipient_role: "koordinator",
         expense_id: expense.id,
@@ -236,18 +242,22 @@ export default function BolgePage() {
         })
         .eq("id", expense.id);
 
-      await supabase.from("notifications").insert([
-        {
-          recipient_role: "koordinator",
+      const koordIds = await getRecipientIds(supabase, { role: "koordinator" });
+      const warnNotifications: { recipient_id: string; message: string; expense_id: string }[] = [
+        ...koordIds.map((recipient_id) => ({
+          recipient_id,
           message: `[${expense.expense_number}] bölge onaylandı (uyarılı), koordinatör onayı bekleniyor.`,
           expense_id: expense.id,
-        },
+        })),
         {
           recipient_id: expense.submitter_id,
           message: `[${expense.expense_number}] bölge sorumlusu notu: ${message}`,
           expense_id: expense.id,
         },
-      ]);
+      ];
+      if (warnNotifications.length > 0) {
+        await supabase.from("notifications").insert(warnNotifications);
+      }
       sendPushFromClient({
         recipient_role: "koordinator",
         expense_id: expense.id,

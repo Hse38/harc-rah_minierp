@@ -24,6 +24,7 @@ import type { Expense } from "@/types";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { sendPushFromClient } from "@/lib/push-notifications";
+import { getRecipientIds } from "@/lib/notification-recipients";
 
 const EXPENSE_TYPES: ExpenseType[] = [
   "Ulaşım",
@@ -159,11 +160,18 @@ export default function DeneyapDuzenlePage() {
             reviewed_at_koord: null,
           })
           .eq("id", expense.id);
-        await supabase.from("notifications").insert({
-          recipient_role: "bolge",
-          message: `[${expense.expense_number}] tekrar gönderildi, bölge onayı bekleniyor.`,
-          expense_id: expense.id,
-        });
+        if (expense.bolge) {
+          const bolgeRecipientIds = await getRecipientIds(supabase, { role: "bolge", bolge: expense.bolge });
+          if (bolgeRecipientIds.length > 0) {
+            await supabase.from("notifications").insert(
+              bolgeRecipientIds.map((recipient_id) => ({
+                recipient_id,
+                message: `[${expense.expense_number}] tekrar gönderildi, bölge onayı bekleniyor.`,
+                expense_id: expense.id,
+              }))
+            );
+          }
+        }
         sendPushFromClient({
           recipient_role: "bolge",
           expense_id: expense.id,

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Expense } from "@/types";
 import { regionToSlug, regionToTurkish } from "./region-names";
+import { getRecipientIds } from "./notification-recipients";
 
 export type CheckLimitResult = { notified: boolean; pct?: number; message?: string };
 
@@ -51,10 +52,15 @@ export async function checkLimitAfterApprove(
 
   if (!message) return { notified: false, pct };
 
-  await supabase.from("notifications").insert([
-    { recipient_role: "koordinator", message },
-    { recipient_role: "yk", message },
-  ]);
+  const koordIds = await getRecipientIds(supabase, { role: "koordinator" });
+  const ykIds = await getRecipientIds(supabase, { role: "yk" });
+  const rows = [
+    ...koordIds.map((recipient_id) => ({ recipient_id, message, expense_id: expense.id })),
+    ...ykIds.map((recipient_id) => ({ recipient_id, message, expense_id: expense.id })),
+  ];
+  if (rows.length > 0) {
+    await supabase.from("notifications").insert(rows);
+  }
 
   return { notified: true, pct, message };
 }

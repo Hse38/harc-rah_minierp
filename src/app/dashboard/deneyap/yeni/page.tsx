@@ -23,6 +23,7 @@ import type { Profile } from "@/types";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { sendPushFromClient } from "@/lib/push-notifications";
+import { getRecipientIds } from "@/lib/notification-recipients";
 import { formatCurrency } from "@/lib/utils";
 
 const EXPENSE_TYPES: ExpenseType[] = [
@@ -150,11 +151,16 @@ export default function DeneyapYeniPage() {
         const expenseId = (inserted as { id: string } | null)?.id;
 
         if (expenseId && profile.bolge) {
-          await supabase.from("notifications").insert({
-            recipient_role: "bolge",
-            message: `[${expenseNumber}] yeni harcama bölge onayı bekliyor.`,
-            expense_id: expenseId,
-          });
+          const bolgeRecipientIds = await getRecipientIds(supabase, { role: "bolge", bolge: profile.bolge });
+          if (bolgeRecipientIds.length > 0) {
+            await supabase.from("notifications").insert(
+              bolgeRecipientIds.map((recipient_id) => ({
+                recipient_id,
+                message: `[${expenseNumber}] yeni harcama bölge onayı bekliyor.`,
+                expense_id: expenseId,
+              }))
+            );
+          }
           sendPushFromClient({
             recipient_role: "bolge",
             expense_id: expenseId,

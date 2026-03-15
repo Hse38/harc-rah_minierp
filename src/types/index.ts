@@ -58,7 +58,7 @@ export interface Expense {
 
 export interface Notification {
   id: string;
-  recipient_role: string;
+  recipient_role?: string;
   recipient_id: string | null;
   expense_id: string;
   message: string;

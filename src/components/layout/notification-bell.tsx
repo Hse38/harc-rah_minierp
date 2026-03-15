@@ -45,15 +45,15 @@ export function NotificationBell({
       const { data } = await supabase
         .from("notifications")
         .select("*")
-        .or(`recipient_id.eq.${userId},recipient_role.eq.${userRole}`)
+        .eq("recipient_id", userId)
         .order("created_at", { ascending: false })
         .limit(10);
       setNotifications((data as Notification[]) || []);
       const { count } = await supabase
         .from("notifications")
         .select("*", { count: "exact", head: true })
-        .eq("is_read", false)
-        .or(`recipient_id.eq.${userId},recipient_role.eq.${userRole}`);
+        .eq("recipient_id", userId)
+        .eq("is_read", false);
       setUnreadCount(count ?? 0);
     };
     fetchInitial();
@@ -76,28 +76,12 @@ export function NotificationBell({
           fetchInitial();
         }
       )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "notifications",
-          filter: `recipient_role=eq.${userRole}`,
-        },
-        (payload) => {
-          if (payload.eventType === "INSERT" && payload.new) {
-            const row = payload.new as { message?: string };
-            if (row.message) toast.info(row.message, { position: "bottom-right" });
-          }
-          fetchInitial();
-        }
-      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId, userRole, supabase]);
+  }, [userId, supabase]);
 
   const markAsRead = async (id: string, expenseId: string) => {
     await supabase.from("notifications").update({ is_read: true }).eq("id", id);

@@ -20,6 +20,7 @@ import { ReceiptLightbox } from "@/components/expenses/receipt-lightbox";
 import { Check, X, BarChart2, Clock, CheckCircle, FileImage, Wallet, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { sendPushFromClient } from "@/lib/push-notifications";
+import { getRecipientIds } from "@/lib/notification-recipients";
 import type { DashboardKoordinatorResponse } from "@/lib/dashboard-data";
 
 const KoordinatorCharts = dynamic(
@@ -285,10 +286,22 @@ export function KoordinatorClient({
           reviewed_at_koord: new Date().toISOString(),
         })
         .eq("id", expense.id);
-      await supabase.from("notifications").insert([
-        { recipient_role: "muhasebe", message: `[${expense.expense_number}] ödemeye hazır.`, expense_id: expense.id },
-        { recipient_id: expense.submitter_id, message: `[${expense.expense_number}] onaylandı.`, expense_id: expense.id },
-      ]);
+      const muhasebeIds = await getRecipientIds(supabase, { role: "muhasebe" });
+      const approveNotifications: { recipient_id: string; message: string; expense_id: string }[] = [
+        ...muhasebeIds.map((recipient_id) => ({
+          recipient_id,
+          message: `[${expense.expense_number}] ödemeye hazır.`,
+          expense_id: expense.id,
+        })),
+        {
+          recipient_id: expense.submitter_id,
+          message: `[${expense.expense_number}] onaylandı.`,
+          expense_id: expense.id,
+        },
+      ];
+      if (approveNotifications.length > 0) {
+        await supabase.from("notifications").insert(approveNotifications);
+      }
       sendPushFromClient({
         recipient_role: "muhasebe",
         expense_id: expense.id,
