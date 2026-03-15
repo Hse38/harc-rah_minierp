@@ -66,7 +66,7 @@ export function Topbar({
             variant="ghost"
             size="icon"
             onClick={handleLogout}
-            aria-label={t("logout", lang)}
+            aria-label={t("nav_logout", lang)}
             className="lg:hover:bg-gray-100"
           >
             <LogOut className="h-5 w-5" />

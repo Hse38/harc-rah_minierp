@@ -39,44 +39,44 @@ function getNavForRole(role: string): NavItem[] {
   switch (role) {
     case "deneyap":
       return [
-        { labelKey: "dashboard", href: "/dashboard/deneyap?tab=dashboard", icon: BarChart2 },
-        { labelKey: "myExpenses", href: "/dashboard/deneyap?tab=list", icon: List },
-        { labelKey: "newExpense", href: "/dashboard/deneyap/yeni", icon: Plus },
+        { labelKey: "nav_dashboard", href: "/dashboard/deneyap?tab=dashboard", icon: BarChart2 },
+        { labelKey: "nav_my_expenses", href: "/dashboard/deneyap?tab=list", icon: List },
+        { labelKey: "nav_new_expense", href: "/dashboard/deneyap/yeni", icon: Plus },
       ];
     case "il":
       return [
-        { labelKey: "dashboard", href: "/dashboard/il?tab=dashboard", icon: BarChart2 },
-        { labelKey: "myExpenses", href: "/dashboard/il?tab=list", icon: List },
-        { labelKey: "newExpense", href: "/dashboard/il/yeni", icon: Plus },
+        { labelKey: "nav_dashboard", href: "/dashboard/il?tab=dashboard", icon: BarChart2 },
+        { labelKey: "nav_my_expenses", href: "/dashboard/il?tab=list", icon: List },
+        { labelKey: "nav_new_expense", href: "/dashboard/il/yeni", icon: Plus },
       ];
     case "bolge":
       return [
-        { labelKey: "dashboard", href: "/dashboard/bolge?tab=dashboard", icon: BarChart2 },
-        { labelKey: "pending", href: "/dashboard/bolge?tab=pending", icon: Clock },
-        { labelKey: "done", href: "/dashboard/bolge?tab=done", icon: CheckCircle },
-        { labelKey: "newExpense", href: "/dashboard/bolge/yeni", icon: Plus },
+        { labelKey: "nav_dashboard", href: "/dashboard/bolge?tab=dashboard", icon: BarChart2 },
+        { labelKey: "nav_pending", href: "/dashboard/bolge?tab=pending", icon: Clock },
+        { labelKey: "nav_done", href: "/dashboard/bolge?tab=done", icon: CheckCircle },
+        { labelKey: "nav_new_expense", href: "/dashboard/bolge/yeni", icon: Plus },
       ];
     case "koordinator":
       return [
-        { labelKey: "dashboard", href: "/dashboard/koordinator?tab=dashboard", icon: BarChart2 },
-        { labelKey: "awaiting", href: "/dashboard/koordinator?tab=awaiting", icon: Clock },
-        { labelKey: "completed", href: "/dashboard/koordinator?tab=completed", icon: CheckCircle },
-        { labelKey: "limits", href: "/dashboard/koordinator?tab=limits", icon: Wallet },
+        { labelKey: "nav_dashboard", href: "/dashboard/koordinator?tab=dashboard", icon: BarChart2 },
+        { labelKey: "nav_awaiting", href: "/dashboard/koordinator?tab=awaiting", icon: Clock },
+        { labelKey: "nav_completed", href: "/dashboard/koordinator?tab=completed", icon: CheckCircle },
+        { labelKey: "nav_limits", href: "/dashboard/koordinator?tab=limits", icon: Wallet },
       ];
     case "muhasebe":
       return [
-        { labelKey: "pending", href: "/dashboard/muhasebe?tab=awaiting", icon: Clock },
-        { labelKey: "paidTab", href: "/dashboard/muhasebe?tab=paid", icon: CheckCircle },
-        { labelKey: "export", href: "/dashboard/muhasebe?tab=export", icon: Download },
+        { labelKey: "nav_pending", href: "/dashboard/muhasebe?tab=awaiting", icon: Clock },
+        { labelKey: "muh_paid", href: "/dashboard/muhasebe?tab=paid", icon: CheckCircle },
+        { labelKey: "nav_export", href: "/dashboard/muhasebe?tab=export", icon: Download },
       ];
     case "yk":
       return [
-        { labelKey: "general", href: "/dashboard/yk?tab=genel", icon: LayoutDashboard },
-        { labelKey: "regions", href: "/dashboard/yk?tab=bolgeler", icon: MapPin },
-        { labelKey: "myExpenses", href: "/dashboard/yk?tab=harcamalar", icon: List },
+        { labelKey: "nav_general", href: "/dashboard/yk?tab=genel", icon: LayoutDashboard },
+        { labelKey: "nav_regions", href: "/dashboard/yk?tab=bolgeler", icon: MapPin },
+        { labelKey: "nav_all_expenses", href: "/dashboard/yk?tab=harcamalar", icon: List },
       ];
     default:
-      return [{ labelKey: "dashboard", href: "/dashboard", icon: BarChart2 }];
+      return [{ labelKey: "nav_dashboard", href: "/dashboard", icon: BarChart2 }];
   }
 }
 
@@ -132,7 +132,10 @@ export function DashboardSidebar({
           {userName || "Kullanıcı"}
         </p>
         <Badge variant="secondary" className="text-[10px] mt-1">
-          {ROLE_LABELS[userRole] ?? userRole}
+          {t(
+            (userRole === "bolge" ? "misc_bölge_sorumlusu" : userRole === "il" ? "misc_il_sorumlusu" : userRole === "koordinator" ? "misc_koordinator" : userRole === "muhasebe" ? "misc_muhasebe" : userRole === "yk" ? "misc_yk" : "misc_deneyap") as TranslationKey,
+            lang
+          )}
         </Badge>
       </div>
       <nav className="flex-1 p-2 lg:p-3 space-y-0.5 lg:space-y-1 overflow-auto">
@@ -163,7 +166,7 @@ export function DashboardSidebar({
           className="flex items-center gap-2 rounded-lg px-3 py-2 lg:py-2.5 text-sm text-slate-600 hover:bg-slate-100 transition-colors"
         >
           <User className="h-4 w-4 shrink-0" />
-          <span className="truncate">{t("profile", lang)}</span>
+          <span className="truncate">{t("nav_profile", lang)}</span>
         </Link>
         <button
           type="button"
@@ -171,7 +174,7 @@ export function DashboardSidebar({
           className="w-full flex items-center gap-2 rounded-lg px-3 py-2 lg:py-2.5 text-sm text-slate-600 hover:bg-slate-100 transition-colors text-left"
         >
           <LogOut className="h-4 w-4 shrink-0" />
-          <span className="truncate">{t("logout", lang)}</span>
+          <span className="truncate">{t("nav_logout", lang)}</span>
         </button>
       </div>
     </aside>

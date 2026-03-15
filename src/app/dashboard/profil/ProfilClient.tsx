@@ -12,12 +12,9 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import {
-  getProfileT,
-  PROFILE_LANGUAGE_OPTIONS,
-  PROFILE_LANG_STORAGE_KEY,
-} from "@/lib/i18n/profile";
+import { PROFILE_LANGUAGE_OPTIONS, PROFILE_LANG_STORAGE_KEY } from "@/lib/i18n/profile";
 import { useLang } from "@/contexts/LanguageContext";
+import { t, type TranslationKey } from "@/lib/i18n";
 import { bolgeAdi } from "@/lib/utils";
 import { validatePhone } from "./phone-validate";
 
@@ -83,8 +80,6 @@ export function ProfilClient({
   const [saving, setSaving] = useState(false);
   const [signingOutAll, setSigningOutAll] = useState(false);
 
-  const t = getProfileT(lang);
-
   useEffect(() => {
     const stored = typeof window !== "undefined" ? localStorage.getItem(PROFILE_LANG_STORAGE_KEY) : null;
     if (stored && (stored === "tr" || stored === "az" || stored === "ky")) {
@@ -96,8 +91,8 @@ export function ProfilClient({
 
   const ibanError = useMemo(() => {
     if (!iban.trim()) return null;
-    return validateIban(iban) ? null : t.ibanError;
-  }, [iban, t.ibanError]);
+    return validateIban(iban) ? null : t("misc_gecerli_iban", lang);
+  }, [iban, lang]);
 
   const phoneValidation = useMemo(() => validatePhone(phone), [phone]);
   const phoneError = phoneValidation.valid ? null : phoneValidation.error;
@@ -110,11 +105,11 @@ export function ProfilClient({
   const passwordMatch = newPassword === newPasswordConfirm;
   const passwordError = useMemo(() => {
     if (!passwordFilled) return null;
-    if (newPassword.length < 8) return t.newPasswordMin;
-    if (!/[A-Z]/.test(newPassword) || !/\d/.test(newPassword)) return t.newPasswordMin;
-    if (newPassword !== newPasswordConfirm) return t.newPasswordMismatch;
+    if (newPassword.length < 8) return t("misc_sifre_kural", lang);
+    if (!/[A-Z]/.test(newPassword) || !/\d/.test(newPassword)) return t("misc_sifre_kural", lang);
+    if (newPassword !== newPasswordConfirm) return t("misc_sifreler_eslesmiyor", lang);
     return null;
-  }, [passwordFilled, newPassword, newPasswordConfirm, t]);
+  }, [passwordFilled, newPassword, newPasswordConfirm, lang]);
 
   const hasProfileChanges =
     profile &&
@@ -180,15 +175,9 @@ export function ProfilClient({
       if (typeof window !== "undefined") {
         localStorage.setItem(PROFILE_LANG_STORAGE_KEY, lang);
       }
-      const msg =
-        lang === "tr"
-          ? "Profil güncellendi"
-          : lang === "az"
-            ? "Profil yeniləndi"
-            : "Профиль жаңыртылды";
-      toast.success(msg);
+      toast.success(t("msg_profile_updated", lang));
     } catch {
-      toast.error(t.toastError);
+      toast.error(t("misc_kaydetme_basarisiz", lang));
     } finally {
       setSaving(false);
     }
@@ -198,16 +187,10 @@ export function ProfilClient({
     setSigningOutAll(true);
     try {
       await supabase.auth.signOut({ scope: "global" });
-      const msg =
-        lang === "tr"
-          ? "Tüm cihazlardan çıkış yapıldı"
-          : lang === "az"
-            ? "Bütün cihazlardan çıxış edildi"
-            : "Бардык түзмөктөрдөн чыгышты";
-      toast.success(msg);
+      toast.success(t("misc_tum_oturumlari_sonlandir", lang));
       window.location.href = "/login";
     } catch {
-      toast.error(t.toastError);
+      toast.error(t("misc_kaydetme_basarisiz", lang));
     } finally {
       setSigningOutAll(false);
     }
@@ -216,7 +199,7 @@ export function ProfilClient({
   if (!profile) {
     return (
       <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800">
-        Profil yüklenemedi. Sayfayı yenileyin.
+        {t("misc_profil_yuklenemedi", lang)}
       </div>
     );
   }
@@ -224,8 +207,9 @@ export function ProfilClient({
   const roleKey = ROLE_KEYS.includes(profile.role as (typeof ROLE_KEYS)[number])
     ? profile.role
     : "deneyap";
-  const roleLabel =
-    (t as Record<string, string>)[`role_${roleKey}`] ?? profile.role;
+  const roleLabelKey: TranslationKey =
+    roleKey === "bolge" ? "misc_bölge_sorumlusu" : roleKey === "il" ? "misc_il_sorumlusu" : roleKey === "koordinator" ? "misc_koordinator" : roleKey === "muhasebe" ? "misc_muhasebe" : roleKey === "yk" ? "misc_yk" : "misc_deneyap";
+  const roleLabel = t(roleLabelKey, lang);
 
   return (
     <div className="space-y-6">
@@ -235,7 +219,7 @@ export function ProfilClient({
             <ArrowLeft className="h-5 w-5" />
           </Link>
         </Button>
-        <h1 className="text-lg font-semibold text-slate-800">{t.title}</h1>
+        <h1 className="text-lg font-semibold text-slate-800">{t("misc_profil_baslik", lang)}</h1>
       </div>
 
       <div className="md:flex md:gap-6 md:items-start">
@@ -270,10 +254,10 @@ export function ProfilClient({
       <Card className="rounded-2xl shadow-sm">
         <CardContent className="p-4 space-y-4">
           <h3 className="text-sm font-semibold text-slate-800 md:text-lg md:font-semibold">
-            {t.editableInfo}
+            {t("misc_duzenlenebilir_bilgiler", lang)}
           </h3>
           <div className="space-y-2">
-            <Label htmlFor="iban">{t.iban}</Label>
+            <Label htmlFor="iban">{t("form_iban", lang)}</Label>
             <Input
               id="iban"
               value={iban}
@@ -282,7 +266,7 @@ export function ProfilClient({
                   e.target.value.toUpperCase().replace(/\s/g, "").slice(0, 26)
                 )
               }
-              placeholder={t.ibanPlaceholder}
+              placeholder={t("misc_iban_placeholder", lang)}
               className={cn(
                 ibanError && "border-red-500 focus-visible:ring-red-500"
               )}
@@ -292,13 +276,13 @@ export function ProfilClient({
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="phone">{t.phoneOptional}</Label>
+            <Label htmlFor="phone">{t("misc_telefon_opsiyonel", lang)}</Label>
             <Input
               id="phone"
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder={t.phonePlaceholderTR}
+              placeholder={t("misc_phone_placeholder", lang)}
               className={cn(
                 phoneError && "border-red-500 focus-visible:ring-red-500"
               )}
@@ -314,7 +298,7 @@ export function ProfilClient({
       <Card className="rounded-2xl shadow-sm">
         <CardContent className="p-4 space-y-3">
           <h3 className="text-sm font-semibold text-slate-800 md:text-lg md:font-semibold">
-            {t.languagePref}
+            {t("misc_dil_tercihi", lang)}
           </h3>
           <div className="flex flex-wrap gap-2">
             {PROFILE_LANGUAGE_OPTIONS.map((opt) => (
@@ -338,7 +322,7 @@ export function ProfilClient({
       <Card className="rounded-2xl shadow-sm">
         <CardContent className="p-4 space-y-3">
           <h3 className="text-sm font-semibold text-slate-800 md:text-lg md:font-semibold">
-            {t.notificationPrefs}
+            {t("misc_bildirim_tercihleri", lang)}
           </h3>
           <label className="flex items-center gap-2 cursor-pointer">
             <input
@@ -352,7 +336,7 @@ export function ProfilClient({
               }
               className="rounded border-slate-300"
             />
-            <span className="text-sm">{t.notifyExpenseApproved}</span>
+            <span className="text-sm">{t("misc_harcama_onaylandi_bildir", lang)}</span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
             <input
@@ -366,7 +350,7 @@ export function ProfilClient({
               }
               className="rounded border-slate-300"
             />
-            <span className="text-sm">{t.notifyExpenseRejected}</span>
+            <span className="text-sm">{t("misc_harcama_reddedildi_bildir", lang)}</span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
             <input
@@ -380,7 +364,7 @@ export function ProfilClient({
               }
               className="rounded border-slate-300"
             />
-            <span className="text-sm">{t.notifyExpensePending}</span>
+            <span className="text-sm">{t("misc_yeni_harcama_beklerken_bildir", lang)}</span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
             <input
@@ -394,7 +378,7 @@ export function ProfilClient({
               }
               className="rounded border-slate-300"
             />
-            <span className="text-sm">{t.notifyLimitWarning}</span>
+            <span className="text-sm">{t("misc_limit_uyarilari", lang)}</span>
           </label>
         </CardContent>
       </Card>
@@ -403,11 +387,11 @@ export function ProfilClient({
       <Card className="rounded-2xl shadow-sm">
         <CardContent className="p-4 space-y-4">
           <h3 className="text-sm font-semibold text-slate-800 md:text-lg md:font-semibold">
-            {t.security}
+            {t("misc_guvenlik", lang)}
           </h3>
-          <p className="text-xs text-slate-500">{t.changePassword}</p>
+          <p className="text-xs text-slate-500">{t("misc_sifre_degistir", lang)}</p>
           <div className="space-y-2">
-            <Label htmlFor="new">{t.newPassword}</Label>
+            <Label htmlFor="new">{t("misc_yeni_sifre", lang)}</Label>
             <Input
               id="new"
               type="password"
@@ -421,7 +405,7 @@ export function ProfilClient({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="confirm">{t.newPasswordRepeat}</Label>
+            <Label htmlFor="confirm">{t("misc_yeni_sifre_tekrar", lang)}</Label>
             <Input
               id="confirm"
               type="password"
@@ -437,7 +421,7 @@ export function ProfilClient({
               <p className="text-sm text-red-600">{passwordError}</p>
             )}
           </div>
-          <p className="text-xs text-slate-500">{t.newPasswordMin}</p>
+          <p className="text-xs text-slate-500">{t("misc_sifre_kural", lang)}</p>
         </CardContent>
       </Card>
 
@@ -445,11 +429,11 @@ export function ProfilClient({
       <Card className="rounded-2xl shadow-sm">
         <CardContent className="p-4 space-y-3">
           <h3 className="text-sm font-semibold text-slate-800 md:text-lg md:font-semibold">
-            {t.lastActivity}
+            {t("misc_son_aktivite", lang)}
           </h3>
           {sessionCreatedAt && (
             <p className="text-sm text-slate-600">
-              {t.lastSignIn}:{" "}
+              {t("misc_son_giris", lang)}:{" "}
               {new Date(sessionCreatedAt).toLocaleString(lang === "tr" ? "tr-TR" : lang === "az" ? "az-AZ" : "ky-KG")}
             </p>
           )}
@@ -461,7 +445,7 @@ export function ProfilClient({
             onClick={handleSignOutAll}
           >
             <LogOut className="h-4 w-4 mr-2" />
-            {signingOutAll ? "..." : t.signOutAll}
+            {signingOutAll ? "..." : t("misc_tum_oturumlari_sonlandir", lang)}
           </Button>
         </CardContent>
       </Card>
@@ -472,7 +456,7 @@ export function ProfilClient({
           disabled={!canSave || saving}
           onClick={handleSave}
         >
-          {saving ? t.saving : t.save}
+          {saving ? t("misc_kaydediliyor", lang) : t("action_save", lang)}
         </Button>
       </div>
         </div>

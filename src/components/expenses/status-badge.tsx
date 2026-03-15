@@ -1,15 +1,9 @@
+"use client";
+
 import { Badge } from "@/components/ui/badge";
 import type { ExpenseStatus } from "@/types";
-
-const LABELS: Record<ExpenseStatus, string> = {
-  pending_bolge: "Bölge Onayı Bekleniyor",
-  pending_koord: "TÇK Onayı Bekleniyor",
-  approved_bolge: "Koordinatör Onayı Bekleniyor",
-  rejected_bolge: "Reddedildi",
-  approved_koord: "Onaylandı",
-  rejected_koord: "Reddedildi",
-  paid: "Ödendi",
-};
+import { useLang } from "@/contexts/LanguageContext";
+import { t, type TranslationKey } from "@/lib/i18n";
 
 const VARIANTS: Record<
   ExpenseStatus,
@@ -24,10 +18,23 @@ const VARIANTS: Record<
   paid: "success",
 };
 
+const STATUS_KEYS: Record<ExpenseStatus, TranslationKey> = {
+  pending_bolge: "status_pending_bolge",
+  pending_koord: "status_pending_koord",
+  approved_bolge: "status_approved_bolge",
+  rejected_bolge: "status_rejected_bolge",
+  approved_koord: "status_approved_koord",
+  rejected_koord: "status_rejected_koord",
+  paid: "status_paid",
+};
+
 export function StatusBadge({ status }: { status: ExpenseStatus }) {
+  const { lang } = useLang();
+  const key = STATUS_KEYS[status];
+  const label = key ? t(key, lang) : status;
   return (
     <Badge variant={VARIANTS[status]} className="shrink-0">
-      {LABELS[status]}
+      {label}
     </Badge>
   );
 }
