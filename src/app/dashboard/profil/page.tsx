@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server"; // createClient() uses createServerClient internally
 import type { Profile } from "@/types";
 import { DEFAULT_NOTIFICATION_PREFS } from "@/types";
 import { ProfilClient } from "./ProfilClient";
@@ -8,22 +8,39 @@ const PROFILE_SELECT =
   "id,full_name,iban,role,il,bolge,phone,created_at,language,notification_prefs";
 
 export default async function ProfilPage() {
+  console.log("Profil sayfası yükleniyor...");
+
   const supabase = await createClient();
   const {
     data: { user },
+    error: authError,
   } = await supabase.auth.getUser();
+
+  console.log("Auth user:", user?.id, authError);
+
   if (!user) redirect("/login");
 
-  let profile: Profile | null = null;
-  const { data: p } = await supabase
+  const {
+    data: profile,
+    error: profileError,
+  } = await supabase
     .from("profiles")
-    .select(PROFILE_SELECT)
+    .select("*")
     .eq("id", user.id)
     .single();
 
-  profile = p as Profile | null;
+  console.log("Profile:", profile, profileError);
+  if (profileError) {
+    console.error("Profile error details:", {
+      code: profileError.code,
+      message: profileError.message,
+      details: profileError.details,
+    });
+  }
 
-  if (!profile) {
+  let profileData: Profile | null = (profile as Profile | null) ?? null;
+
+  if (!profileData) {
     const fullName =
       (user.user_metadata?.full_name as string) || user.email || "Kullanıcı";
     const { error: insertError } = await supabase.from("profiles").upsert(
@@ -48,7 +65,7 @@ export default async function ProfilPage() {
       .select(PROFILE_SELECT)
       .eq("id", user.id)
       .single();
-    profile = (after as Profile) ?? null;
+    profileData = (after as Profile) ?? null;
   }
 
   const email = user.email ?? "";
@@ -58,7 +75,7 @@ export default async function ProfilPage() {
 
   return (
     <ProfilClient
-      initialProfile={profile}
+      initialProfile={profileData}
       email={email}
       sessionCreatedAt={lastSignInAt}
     />
