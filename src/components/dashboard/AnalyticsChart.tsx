@@ -25,7 +25,7 @@ export function AnalyticsChart({
     >
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between mb-4">
         <div>
-          <h3 className="text-sm font-medium text-slate-700 lg:text-base text-gray-900">
+          <h3 className="text-sm md:text-[14px] font-semibold text-[#374151]">
             {title}
           </h3>
           {subtitle && (
@@ -34,7 +34,7 @@ export function AnalyticsChart({
         </div>
         {filter && <div className="mt-2 sm:mt-0">{filter}</div>}
       </div>
-      <div className="min-h-[180px] lg:min-h-[220px]">{children}</div>
+      <div className="min-h-[180px] md:min-h-[280px]">{children}</div>
     </div>
   );
 }

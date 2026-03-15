@@ -17,7 +17,7 @@ import { checkLimitAfterApprove } from "@/lib/check-limit";
 import { REGION_LIMIT_SLUGS, regionToSlug, regionToTurkish } from "@/lib/region-names";
 import { ApprovalModal } from "@/components/approval/approval-modal";
 import { ReceiptLightbox } from "@/components/expenses/receipt-lightbox";
-import { Check, X, BarChart2, Clock, CheckCircle, FileImage, Wallet, Pencil } from "lucide-react";
+import { Check, X, BarChart2, Clock, CheckCircle, FileImage, Wallet, Pencil, ChevronRight, Activity } from "lucide-react";
 import { toast } from "sonner";
 import { sendPushFromClient } from "@/lib/push-notifications";
 import { getRecipientIds } from "@/lib/notification-recipients";
@@ -177,6 +177,18 @@ export function KoordinatorClient({
         })),
     [completed]
   );
+
+  const pendingBolgeCount = useMemo(() => allExpenses.filter((e) => e.status === "pending_bolge").length, [allExpenses]);
+  const paymentAwaitingCount = useMemo(() => allExpenses.filter((e) => e.status === "approved_koord").length, [allExpenses]);
+  const [profile, setProfile] = useState<{ full_name?: string } | null>(null);
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: p } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
+      setProfile((p as { full_name?: string } | null) ?? null);
+    })();
+  }, [supabase]);
 
   const refetch = useCallback(async () => {
     const { data } = await supabase
@@ -380,12 +392,30 @@ export function KoordinatorClient({
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex-1 pb-20">
-        <h1 className="text-lg font-semibold text-slate-800 mb-4">Koordinatör</h1>
-
+        <h1 className="text-lg font-semibold text-slate-800 mb-4 md:hidden">Koordinatör</h1>
 
         {activeTab === "dashboard" && (
           <div className="space-y-4">
-            <div className="flex gap-2">
+            <div className="hidden md:flex md:flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-gray-200">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Genel Bakış</h1>
+                <p className="text-sm text-gray-500 mt-0.5">Tüm Türkiye • {profile?.full_name ?? ""}</p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                {(["weekly", "monthly", "yearly"] as const).map((key) => (
+                  <Button
+                    key={key}
+                    variant={periodFilter === key ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setPeriodFilter(key)}
+                    className="rounded-full"
+                  >
+                    {key === "weekly" ? "Haftalık" : key === "monthly" ? "Aylık" : "Yıllık"}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-2 md:hidden">
               {(["weekly", "monthly", "yearly"] as const).map((key) => (
                 <Button
                   key={key}
@@ -397,11 +427,47 @@ export function KoordinatorClient({
                 </Button>
               ))}
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <MetricCard title="Toplam onaylanan (₺)" value={formatCurrency(approvedTotalAllTime)} />
-              <MetricCard title="Bu dönem onaylanan" value={periodApprovedCount} />
-              <MetricCard title="Bekleyen onay" value={awaiting.length} />
-              <MetricCard title="Reddedilen" value={rejectedCount} />
+
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <MetricCard
+                title="Toplam Onaylanan (₺)"
+                value={formatCurrency(approvedTotalAllTime)}
+                borderColor="success"
+              />
+              <MetricCard
+                title="Bekleyen Onay"
+                value={awaiting.length}
+                borderColor="warning"
+                className={awaiting.length >= 5 ? "ring-1 ring-red-200" : ""}
+                trend={awaiting.length >= 5 ? { text: "Acil" } : undefined}
+              />
+              <MetricCard title="Bu Dönem Onaylanan" value={periodApprovedCount} borderColor="primary" />
+              <MetricCard title="Reddedilen" value={rejectedCount} borderColor="danger" />
+            </div>
+
+            {/* Onay süreci özeti (funnel) - md+ */}
+            <div className="hidden md:block">
+              <Card className="rounded-2xl shadow-sm border-gray-200 overflow-hidden">
+                <CardContent className="p-4 md:p-5">
+                  <h3 className="text-sm md:text-[14px] font-semibold text-[#374151] mb-3">Onay Süreci Özeti</h3>
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <a href="/dashboard/koordinator?tab=awaiting" className="flex flex-col items-center rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 min-w-[120px] hover:bg-gray-100 transition">
+                      <span className="text-2xl font-bold text-[#D97706]">{pendingBolgeCount}</span>
+                      <span className="text-xs text-gray-600 mt-0.5">Bölge Bekleyen</span>
+                    </a>
+                    <ChevronRight className="h-5 w-5 text-gray-400 shrink-0" />
+                    <a href="/dashboard/koordinator?tab=awaiting" className="flex flex-col items-center rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 min-w-[120px] hover:bg-gray-100 transition">
+                      <span className="text-2xl font-bold text-[#1E40AF]">{awaiting.length}</span>
+                      <span className="text-xs text-gray-600 mt-0.5">Koordinatör Bekleyen</span>
+                    </a>
+                    <ChevronRight className="h-5 w-5 text-gray-400 shrink-0" />
+                    <div className="flex flex-col items-center rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 min-w-[120px]">
+                      <span className="text-2xl font-bold text-[#059669]">{paymentAwaitingCount}</span>
+                      <span className="text-xs text-gray-600 mt-0.5">Ödeme Bekleyen</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
             <KoordinatorCharts
@@ -410,22 +476,26 @@ export function KoordinatorClient({
               typeChartData={typeChartData}
             />
 
-            <Card className="rounded-2xl shadow-sm">
-              <CardContent className="p-4">
-                <h3 className="text-sm font-medium text-slate-700 mb-2">Son 5 aktivite</h3>
+            <Card className="rounded-2xl shadow-sm border-gray-200 overflow-hidden">
+              <CardContent className="p-4 md:p-5">
+                <h3 className="text-sm md:text-[14px] font-semibold text-[#374151] mb-3">Son Aktiviteler</h3>
                 {last5Activities.length === 0 ? (
-                  <p className="text-sm text-slate-500 py-2">Henüz aktivite yok.</p>
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Activity className="h-10 w-10 text-gray-300 mb-2" />
+                    <p className="text-sm text-gray-500">Henüz işlem yapılmadı</p>
+                  </div>
                 ) : (
                   <ul className="space-y-2">
                     {last5Activities.map((e) => (
                       <li
                         key={e.id}
-                        className="flex justify-between items-center py-2 border-b border-slate-100 last:border-0 text-sm"
+                        className="flex flex-wrap items-center justify-between gap-2 py-2 border-b border-gray-100 last:border-0 text-sm"
                       >
                         <span className="font-medium">{e.expense_number}</span>
-                        <span>{formatCurrency(e.amount)}</span>
+                        <span>{e.status === "rejected_koord" ? "reddedildi" : "onaylandı"}</span>
+                        <span className="font-semibold">{formatCurrency(e.amount)}</span>
                         <StatusBadge status={e.status} />
-                        <span className="text-slate-500 text-xs">{formatDate(e.actionDate!)}</span>
+                        <span className="text-gray-500 text-xs w-full md:w-auto">{formatDate(e.actionDate!)}</span>
                       </li>
                     ))}
                   </ul>

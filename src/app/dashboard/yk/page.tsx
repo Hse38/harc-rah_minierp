@@ -38,8 +38,10 @@ import {
   Legend,
   CartesianGrid,
 } from "recharts";
-import { LayoutDashboard, MapPin, List, TrendingUp, TrendingDown, ChevronDown, ChevronUp, X } from "lucide-react";
+import { LayoutDashboard, MapPin, List, TrendingUp, TrendingDown, ChevronDown, ChevronUp, X, BarChart2, CreditCard, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DASHBOARD_COLORS, CHART_COLORS, formatCurrencyTR } from "@/lib/dashboard-theme";
+import Link from "next/link";
 
 type TimeFilter = "weekly" | "monthly" | "yearly" | "all";
 type YkTab = "genel" | "bolgeler" | "harcamalar";
@@ -453,105 +455,79 @@ export default function YkPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col max-w-[430px] mx-auto">
+    <div className="min-h-screen flex flex-col max-w-[430px] md:max-w-none mx-auto">
       <div className="flex-1 pb-20">
-        <h1 className="text-lg font-semibold text-slate-800 mb-4">YK Başkanı</h1>
+        <h1 className="text-lg font-semibold text-slate-800 mb-4 md:hidden">YK Başkanı</h1>
 
         {activeTab === "genel" && (
           <div className="space-y-4">
-            <div className="rounded-2xl shadow-sm border border-slate-100 bg-gradient-to-br from-[#2563EB]/10 to-white p-4">
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                Toplam harcama (tüm zamanlar)
-              </p>
-              <p className="text-2xl font-bold text-slate-800 mt-1">
-                {formatCurrency(totalAmount)}
-              </p>
+            {/* Hero: mobilde mevcut kart, md+ büyük hero */}
+            <div className="rounded-2xl shadow-sm border border-slate-100 bg-gradient-to-br from-[#2563EB]/10 to-white p-4 md:hidden">
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Toplam harcama (tüm zamanlar)</p>
+              <p className="text-2xl font-bold text-slate-800 mt-1">{formatCurrency(totalAmount)}</p>
               <div className="flex items-center gap-2 mt-2 text-sm">
-                {monthChangePercent >= 0 ? (
-                  <TrendingUp className="h-4 w-4 text-[#16A34A]" />
-                ) : (
-                  <TrendingDown className="h-4 w-4 text-[#DC2626]" />
-                )}
-                <span
-                  className={
-                    monthChangePercent >= 0 ? "text-[#16A34A]" : "text-[#DC2626]"
-                  }
-                >
-                  Bu ay {formatCurrency(thisMonth)} · Geçen aya göre{" "}
-                  {monthChangePercent >= 0 ? "+" : ""}
-                  {monthChangePercent.toFixed(1)}%
+                {monthChangePercent >= 0 ? <TrendingUp className="h-4 w-4 text-[#16A34A]" /> : <TrendingDown className="h-4 w-4 text-[#DC2626]" />}
+                <span className={monthChangePercent >= 0 ? "text-[#16A34A]" : "text-[#DC2626]"}>
+                  Bu ay {formatCurrency(thisMonth)} · Geçen aya göre {monthChangePercent >= 0 ? "+" : ""}{monthChangePercent.toFixed(1)}%
                 </span>
               </div>
             </div>
+            <div className="hidden md:flex md:flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-gray-200">
+              <div>
+                <p className="text-[11px] uppercase tracking-wider text-gray-500">Toplam Harcama</p>
+                <p className="text-3xl lg:text-4xl font-bold text-gray-900 mt-0.5">{formatCurrency(totalAmount)}</p>
+                <div className="flex items-center gap-2 mt-2 text-sm">
+                  <span className={monthChangePercent >= 0 ? "text-[#059669]" : "text-[#DC2626]"}>
+                    Bu ay: {formatCurrency(thisMonth)} · Geçen aya göre {monthChangePercent >= 0 ? "+" : ""}{monthChangePercent.toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                {([["weekly", "Haftalık"], ["monthly", "Aylık"], ["yearly", "Yıllık"], ["all", "Tümü"]] as [TimeFilter, string][]).map(([key, label]) => (
+                  <Button key={key} variant={timeFilter === key ? "default" : "outline"} size="sm" onClick={() => setTimeFilter(key)} className="rounded-full">
+                    {label}
+                  </Button>
+                ))}
+              </div>
+            </div>
 
-            <div className="flex gap-2 flex-wrap">
-              {(
-                [
-                  ["weekly", "Haftalık"],
-                  ["monthly", "Aylık"],
-                  ["yearly", "Yıllık"],
-                  ["all", "Tümü"],
-                ] as [TimeFilter, string][]
-              ).map(([key, label]) => (
-                <Button
-                  key={key}
-                  variant={timeFilter === key ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setTimeFilter(key)}
-                >
-                  {label}
+            <div className="flex gap-2 flex-wrap md:hidden">
+              {(["weekly", "monthly", "yearly", "all"] as const).map((key) => (
+                <Button key={key} variant={timeFilter === key ? "default" : "outline"} size="sm" onClick={() => setTimeFilter(key)}>
+                  {key === "weekly" ? "Haftalık" : key === "monthly" ? "Aylık" : key === "yearly" ? "Yıllık" : "Tümü"}
                 </Button>
               ))}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <MetricCard title="Toplam harcama (₺)" value={formatCurrency(totalAmount)} />
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <MetricCard title="Toplam Harcama (₺)" value={formatCurrency(totalAmount)} borderColor="primary" />
               <MetricCard
-                title="Onaylanan / Bekleyen / Red"
+                title="Onaylanan / Bekleyen / Reddedilen"
                 value={`${approvedCount} / ${pendingCount} / ${rejectedCount}`}
+                borderColor="success"
               />
-              <MetricCard title="Ödenen toplam (₺)" value={formatCurrency(paidTotal)} />
-              <MetricCard title="Ort. harcama (₺)" value={formatCurrency(avgAmount)} />
-              <div className="col-span-2">
-                <MetricCard
-                  title="Bölge talepleri (TÇK bekliyor)"
-                  value={bolgeTalebiCount}
-                />
-              </div>
+              <MetricCard title="Ödenen Toplam (₺)" value={formatCurrency(paidTotal)} borderColor="purple" />
+              <MetricCard title="Ortalama Harcama (₺)" value={formatCurrency(avgAmount)} borderColor="warning" />
             </div>
 
             {monthlyTrendData.some((d) => d.toplam > 0) && (
-              <Card className="rounded-2xl shadow-sm">
-                <CardContent className="p-4">
-                  <h3 className="text-sm font-medium text-slate-700 mb-2">
-                    Aylık harcama trendi (son 12 ay)
-                  </h3>
-                  <div className="h-52">
+              <Card className="rounded-2xl shadow-sm border-gray-200 overflow-hidden">
+                <CardContent className="p-4 md:p-5">
+                  <h3 className="text-sm md:text-[14px] font-semibold text-[#374151] mb-3">Aylık Harcama Trendi</h3>
+                  <div className="h-52 md:h-[280px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart
-                        data={monthlyTrendData}
-                        margin={{ top: 5, right: 5, left: -10, bottom: 5 }}
-                      >
+                      <AreaChart data={monthlyTrendData} margin={{ top: 8, right: 8, left: -10, bottom: 5 }}>
                         <defs>
                           <linearGradient id="ykArea" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#2563EB" stopOpacity={0.4} />
-                            <stop offset="100%" stopColor="#2563EB" stopOpacity={0} />
+                            <stop offset="0%" stopColor={DASHBOARD_COLORS.primary} stopOpacity={0.3} />
+                            <stop offset="100%" stopColor={DASHBOARD_COLORS.primary} stopOpacity={0.05} />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                        <XAxis dataKey="ay" tick={{ fontSize: 10 }} />
-                        <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${v}`} />
-                        <Tooltip
-                          formatter={(v: number) => [formatCurrency(v), "Tutar"]}
-                          labelFormatter={(l) => l}
-                        />
-                        <Area
-                          type="monotone"
-                          dataKey="toplam"
-                          stroke="#2563EB"
-                          strokeWidth={2}
-                          fill="url(#ykArea)"
-                        />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                        <XAxis dataKey="ay" tick={{ fontSize: 11 }} />
+                        <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatCurrencyTR(v)} />
+                        <Tooltip formatter={(v: number) => [formatCurrencyTR(v), "Tutar"]} contentStyle={{ backgroundColor: "#fff", borderRadius: "8px", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }} />
+                        <Area type="monotone" dataKey="toplam" stroke={DASHBOARD_COLORS.primary} strokeWidth={2} fill="url(#ykArea)" fillOpacity={0.15} dot={{ r: 4 }} isAnimationActive />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
@@ -560,60 +536,64 @@ export default function YkPage() {
             )}
 
             {statusPieData.length > 0 && (
-              <Card className="rounded-2xl shadow-sm">
-                <CardContent className="p-4">
-                  <h3 className="text-sm font-medium text-slate-700 mb-2">
-                    Durum dağılımı
-                  </h3>
-                  <div className="h-56 flex items-center justify-center">
+              <Card className="rounded-2xl shadow-sm border-gray-200 overflow-hidden">
+                <CardContent className="p-4 md:p-5">
+                  <h3 className="text-sm md:text-[14px] font-semibold text-[#374151] mb-3">Durum Dağılımı</h3>
+                  <div className="h-56 md:h-[280px] flex items-center justify-center">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
                           data={statusPieData}
                           cx="50%"
                           cy="50%"
-                          innerRadius={50}
-                          outerRadius={70}
+                          innerRadius={60}
+                          outerRadius={85}
                           paddingAngle={2}
                           dataKey="value"
-                          label={({ name, value }) => `${name}: ${value}`}
+                          label={false}
                         >
-                          {statusPieData.map((d, i) => (
-                            <Cell
-                              key={d.status}
-                              fill={STATUS_COLORS[d.status]}
-                            />
+                          {statusPieData.map((d) => (
+                            <Cell key={d.status} fill={STATUS_COLORS[d.status]} />
                           ))}
                         </Pie>
-                        <Tooltip />
-                        <Legend />
+                        <Tooltip formatter={(value: number, name: string, props: { payload?: { name: string; value: number } }) => {
+                          const total = expenses.length;
+                          const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+                          return `${props.payload?.name ?? name}: ${value} (%${pct})`;
+                        }} contentStyle={{ backgroundColor: "#fff", borderRadius: "8px", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }} />
+                        <Legend layout="horizontal" align="center" verticalAlign="bottom" />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
-                  <p className="text-center text-sm text-slate-500 mt-1">
-                    Toplam {expenses.length} harcama
-                  </p>
+                  <p className="text-center text-sm text-gray-500 mt-1">Toplam {expenses.length} harcama</p>
                 </CardContent>
               </Card>
             )}
 
-            <Card className="rounded-2xl shadow-sm">
-              <CardContent className="p-4">
-                <h3 className="text-sm font-medium text-slate-700 mb-2">Son aktiviteler</h3>
+            <Card className="rounded-2xl shadow-sm border-gray-200 overflow-hidden">
+              <CardContent className="p-4 md:p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm md:text-[14px] font-semibold text-[#374151]">Son Aktiviteler</h3>
+                  <Link href="/dashboard/yk?tab=harcamalar" className="text-xs font-medium text-[#1E40AF] hover:underline hidden md:inline">Tümünü gör</Link>
+                </div>
                 {expenses.length === 0 ? (
-                  <p className="text-sm text-slate-500 py-2">Henüz aktivite yok.</p>
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Activity className="h-10 w-10 text-gray-300 mb-2" />
+                    <p className="text-sm text-gray-500">Henüz aktivite yok.</p>
+                  </div>
                 ) : (
                   <ul className="space-y-2">
-                    {expenses.slice(0, 10).map((e) => (
+                    {expenses.slice(0, 5).map((e) => (
                       <li
                         key={e.id}
                         role="button"
                         tabIndex={0}
                         onClick={() => { setDetailExpense(e); setDetailOpen(true); }}
                         onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); setDetailExpense(e); setDetailOpen(true); } }}
-                        className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm border-b border-slate-100 pb-2 last:border-0 cursor-pointer hover:bg-slate-50 -mx-2 px-2 py-1.5 rounded-lg transition-colors"
+                        className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm border-b border-gray-100 pb-2 last:border-0 cursor-pointer hover:bg-gray-50 -mx-2 px-2 py-1.5 rounded-lg transition-colors"
                       >
                         <span className="font-medium">{e.expense_number}</span>
+                        <span className="text-slate-600">{e.submitter_name}</span>
                         <span className="text-slate-600">{formatCurrency(e.amount)}</span>
                         <StatusBadge status={e.status} />
                         <span className="text-slate-400 text-xs w-full">{formatDate(e.created_at)}</span>

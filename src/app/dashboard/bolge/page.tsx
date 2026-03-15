@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/expenses/status-badge";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { CHART_COLORS, CHART_GRID_STROKE, CHART_GRID_STROKE_DASHARRAY, formatCurrencyTR } from "@/lib/dashboard-theme";
 import { ApprovalModal } from "@/components/approval/approval-modal";
 import { WarnModal } from "@/components/approval/warn-modal";
 import { Receipt, Check, AlertCircle, X, BarChart2, Clock, CheckCircle, Plus } from "lucide-react";
@@ -137,7 +138,7 @@ export default function BolgePage() {
     return Object.entries(byIl).map(([il, toplam]) => ({ il, toplam }));
   }, [periodExpenses]);
 
-  const PIE_COLORS = ["#2563EB", "#22C55E", "#EAB308", "#F97316", "#64748B"];
+  const PIE_COLORS = CHART_COLORS;
 
   useEffect(() => {
     (async () => {
@@ -333,14 +334,43 @@ export default function BolgePage() {
     );
   }
 
+  const daysLeftInMonth = new Date(periodEnd.getFullYear(), periodEnd.getMonth() + 1, 0).getDate() - periodEnd.getDate();
+
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex-1 pb-20">
-        <h1 className="text-lg font-semibold text-slate-800 mb-4">Bölge Sorumlusu</h1>
+        <h1 className="text-lg font-semibold text-slate-800 mb-4 md:hidden">Bölge Sorumlusu</h1>
 
         {activeTab === "dashboard" && (
           <div className="space-y-4">
-            <div className="flex gap-2">
+            {/* Hero + period filter: sadece md+ */}
+            <div className="hidden md:flex md:flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-gray-200">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{profile?.bolge || "Bölge"}</h1>
+                <p className="text-sm text-gray-500 mt-0.5">{profile?.full_name} • Bölge Sorumlusu</p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                {(
+                  [
+                    { key: "weekly" as const, label: "Haftalık" },
+                    { key: "monthly" as const, label: "Aylık" },
+                    { key: "yearly" as const, label: "Yıllık" },
+                  ] as const
+                ).map(({ key, label }) => (
+                  <Button
+                    key={key}
+                    variant={periodFilter === key ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setPeriodFilter(key)}
+                    className="rounded-full"
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-2 md:hidden">
               {(
                 [
                   { key: "weekly" as const, label: "Haftalık" },
@@ -359,33 +389,43 @@ export default function BolgePage() {
               ))}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               <MetricCard
-                title="Toplam harcama (₺)"
+                title="Toplam Harcama"
                 value={formatCurrency(dashboardMetrics.totalAmount)}
+                borderColor="primary"
               />
-              <MetricCard title="Harcama sayısı" value={dashboardMetrics.expenseCount} />
-              <MetricCard title="Bekleyen onay" value={dashboardMetrics.pendingCount} />
               <MetricCard
-                title="Ortalama harcama (₺)"
+                title="Harcama Sayısı"
+                value={dashboardMetrics.expenseCount}
+                borderColor="success"
+              />
+              <MetricCard
+                title="Bekleyen Onay"
+                value={dashboardMetrics.pendingCount}
+                borderColor="warning"
+                trend={dashboardMetrics.pendingCount >= 3 ? { text: "Acil" } : undefined}
+                className={dashboardMetrics.pendingCount >= 3 ? "ring-1 ring-red-200" : ""}
+              />
+              <MetricCard
+                title="Ortalama Harcama"
                 value={formatCurrency(dashboardMetrics.avgExpense)}
+                borderColor="purple"
               />
             </div>
 
             {personelChartData.length > 0 && (
-              <Card>
-                <CardContent className="p-4">
-                  <h3 className="text-sm font-medium text-slate-700 mb-2">
-                    Personel bazlı harcama
-                  </h3>
-                  <div className="h-56 w-full">
+              <Card className="rounded-2xl shadow-sm border-gray-200 overflow-hidden">
+                <CardContent className="p-4 md:p-5">
+                  <h3 className="text-sm md:text-[14px] font-semibold text-[#374151] mb-3">Personel Bazlı Harcama Özeti</h3>
+                  <div className="h-56 md:h-[280px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={personelChartData}
                         layout="vertical"
                         margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
                       >
-                        <XAxis type="number" tickFormatter={(v) => `${v} ₺`} fontSize={11} />
+                        <XAxis type="number" tickFormatter={(v) => formatCurrencyTR(v)} fontSize={11} />
                         <YAxis
                           type="category"
                           dataKey="name"
@@ -394,10 +434,10 @@ export default function BolgePage() {
                           tickFormatter={(v) => (v.length > 8 ? v.slice(0, 7) + "…" : v)}
                         />
                         <Tooltip
-                          formatter={(v: number) => [formatCurrency(v), "Toplam"]}
-                          labelFormatter={(l) => l}
+                          formatter={(v: number) => [formatCurrencyTR(v), "Toplam"]}
+                          contentStyle={{ backgroundColor: "#fff", borderRadius: "8px", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
                         />
-                        <Bar dataKey="toplam" fill="#2563EB" radius={[0, 4, 4, 0]} />
+                        <Bar dataKey="toplam" fill={CHART_COLORS[0]} radius={[0, 6, 6, 0]} barSize={32} isAnimationActive />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -406,12 +446,10 @@ export default function BolgePage() {
             )}
 
             {(typeChartData.some((d) => d.toplam > 0)) && (
-              <Card>
-                <CardContent className="p-4">
-                  <h3 className="text-sm font-medium text-slate-700 mb-2">
-                    Harcama türü dağılımı
-                  </h3>
-                  <div className="h-56 w-full">
+              <Card className="rounded-2xl shadow-sm border-gray-200 overflow-hidden">
+                <CardContent className="p-4 md:p-5">
+                  <h3 className="text-sm md:text-[14px] font-semibold text-[#374151] mb-3">Harcama Türü Dağılımı</h3>
+                  <div className="h-56 md:h-[280px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
@@ -420,17 +458,24 @@ export default function BolgePage() {
                           nameKey="tür"
                           cx="50%"
                           cy="50%"
-                          innerRadius={40}
-                          outerRadius={60}
+                          innerRadius={56}
+                          outerRadius={80}
                           paddingAngle={2}
-                          label={({ tür, toplam }) => `${tür}: ${formatCurrency(toplam)}`}
+                          label={false}
                         >
                           {typeChartData.filter((d) => d.toplam > 0).map((_, i) => (
                             <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                           ))}
                         </Pie>
-                        <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                        <Legend />
+                        <Tooltip
+                          formatter={(value: number, name: string, props: { payload?: { toplam: number; tür: string } }) => {
+                            const total = typeChartData.reduce((s, d) => s + d.toplam, 0);
+                            const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+                            return `${props.payload?.tür ?? name}: ${formatCurrencyTR(value)} (%${pct})`;
+                          }}
+                          contentStyle={{ backgroundColor: "#fff", borderRadius: "8px", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
+                        />
+                        <Legend layout="horizontal" align="center" verticalAlign="bottom" wrapperStyle={{ paddingTop: 12 }} />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
@@ -439,31 +484,43 @@ export default function BolgePage() {
             )}
 
             {ilChartData.length > 0 && (
-              <Card>
-                <CardContent className="p-4">
-                  <h3 className="text-sm font-medium text-slate-700 mb-2">
-                    İl bazlı karşılaştırma
-                  </h3>
-                  <div className="h-56 w-full">
+              <Card className="rounded-2xl shadow-sm border-gray-200 overflow-hidden">
+                <CardContent className="p-4 md:p-5">
+                  <h3 className="text-sm md:text-[14px] font-semibold text-[#374151] mb-3">İl Bazlı Harcama Karşılaştırması</h3>
+                  <div className="h-56 md:h-[280px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={ilChartData}
                         layout="vertical"
                         margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
                       >
-                        <XAxis type="number" tickFormatter={(v) => `${v} ₺`} fontSize={11} />
+                        <XAxis type="number" tickFormatter={(v) => formatCurrencyTR(v)} fontSize={11} />
                         <YAxis type="category" dataKey="il" width={56} tick={{ fontSize: 11 }} />
                         <Tooltip
-                          formatter={(v: number) => [formatCurrency(v), "Toplam"]}
-                          labelFormatter={(l) => l}
+                          formatter={(v: number) => [formatCurrencyTR(v), "Toplam"]}
+                          contentStyle={{ backgroundColor: "#fff", borderRadius: "8px", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
                         />
-                        <Bar dataKey="toplam" fill="#2563EB" radius={[0, 4, 4, 0]} />
+                        <Bar dataKey="toplam" fill={CHART_COLORS[0]} radius={[0, 6, 6, 0]} barSize={32} isAnimationActive />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </CardContent>
               </Card>
             )}
+
+            {/* Limit durumu kartı: md+ */}
+            <div className="hidden md:block">
+              <Card className="rounded-2xl shadow-sm border-gray-200 overflow-hidden">
+                <CardContent className="p-4 md:p-5">
+                  <h3 className="text-sm md:text-[14px] font-semibold text-[#374151] mb-2">Limit Durumu</h3>
+                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(dashboardMetrics.totalAmount)} <span className="text-gray-400 font-normal text-base">/ — kullanıldı</span></p>
+                  <div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-[#1E40AF] rounded-full transition-all" style={{ width: "0%" }} />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">{daysLeftInMonth} gün kaldı (bu ay)</p>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )}
 

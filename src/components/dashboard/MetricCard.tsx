@@ -12,9 +12,9 @@ const BORDER_COLORS: Record<string, string> = {
   neutral: "#6B7280",
 };
 
-export type StatCardBorderColor = keyof typeof BORDER_COLORS;
+export type MetricCardVariant = keyof typeof BORDER_COLORS;
 
-export function StatCard({
+export function MetricCard({
   label,
   value,
   trend,
@@ -24,7 +24,7 @@ export function StatCard({
   label: string;
   value: string | number;
   trend?: { text: string; up?: boolean };
-  borderColor?: StatCardBorderColor;
+  borderColor?: MetricCardVariant;
   className?: string;
 }) {
   const border = BORDER_COLORS[borderColor] ?? BORDER_COLORS.primary;
