@@ -22,7 +22,7 @@ export async function registerPushNotifications(userId: string): Promise<boolean
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(
         process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!
-      ),
+      ) as BufferSource,
     });
 
     const supabase = createBrowserClient(
