@@ -1,47 +1,64 @@
 "use client";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 
-const VAPID_PUBLIC = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-
-export async function requestPushPermission(
-  userId: string,
-  supabase: SupabaseClient
-): Promise<boolean> {
-  if (typeof window === "undefined" || !("Notification" in window) || !("serviceWorker" in navigator)) {
+export async function registerPushNotifications(userId: string): Promise<boolean> {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+    console.log("Push notifications desteklenmiyor");
     return false;
   }
-  const permission = await Notification.requestPermission();
-  if (permission !== "granted") return false;
-  if (!VAPID_PUBLIC) return false;
 
-  const registration = await navigator.serviceWorker.register("/sw.js");
-  await navigator.serviceWorker.ready;
+  try {
+    const registration = await navigator.serviceWorker.register("/sw.js");
+    console.log("Service worker kayıt oldu:", registration);
 
-  const subscription = await registration.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC) as BufferSource,
-  });
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      console.log("Push notification izni reddedildi");
+      return false;
+    }
 
-  await supabase.from("push_subscriptions").upsert(
-    {
-      user_id: userId,
-      subscription: JSON.stringify(subscription),
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id" }
-  );
-  return true;
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(
+        process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!
+      ),
+    });
+
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    await supabase.from("push_subscriptions").upsert(
+      {
+        user_id: userId,
+        subscription: JSON.parse(JSON.stringify(subscription)),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id" }
+    );
+
+    console.log("Push subscription kaydedildi");
+    return true;
+  } catch (error) {
+    console.error("Push notification hatası:", error);
+    return false;
+  }
 }
 
-function urlBase64ToUint8Array(base64: string): Uint8Array {
-  const padding = "=".repeat((4 - (base64.length % 4)) % 4);
-  const b64 = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const raw = atob(b64);
-  const out = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
-  return out;
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
 }
+
+const VAPID_PUBLIC = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
 export function isPushSupported(): boolean {
   if (typeof window === "undefined") return false;

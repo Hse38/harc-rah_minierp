@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Toaster } from "sonner";
+import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import "./globals.css";
 
 const LOGO_URL = "https://raw.githubusercontent.com/Hse38/t3logo/main/1.T3%20dikey.png";
@@ -21,6 +22,7 @@ export default function RootLayout({
   return (
     <html lang="tr">
       <body>
+        <ServiceWorkerRegister />
         {children}
         <Toaster richColors position="top-center" />
       </body>

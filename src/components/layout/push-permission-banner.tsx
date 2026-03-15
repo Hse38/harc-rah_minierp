@@ -2,17 +2,31 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { requestPushPermission, isPushSupported } from "@/lib/push-notifications";
-import { createClient } from "@/lib/supabase/client";
+import { registerPushNotifications, isPushSupported } from "@/lib/push-notifications";
 import { X } from "lucide-react";
+import { toast } from "sonner";
 
 const DISMISS_KEY = "pushBannerDismissedUntil";
+const PUSH_ASKED_KEY = "push-asked";
 const DISMISS_DAYS = 7;
 
 export function PushPermissionBanner({ userId }: { userId: string }) {
-  const [supabase] = useState(() => createClient());
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const askPushPermission = async () => {
+      const alreadyAsked = localStorage.getItem(PUSH_ASKED_KEY);
+      if (!alreadyAsked && userId && isPushSupported()) {
+        const success = await registerPushNotifications(userId);
+        localStorage.setItem(PUSH_ASKED_KEY, "true");
+        if (success) {
+          toast.success("Bildirimler aktif edildi!");
+        }
+      }
+    };
+    askPushPermission();
+  }, [userId]);
 
   useEffect(() => {
     if (!isPushSupported() || typeof window === "undefined") return;
@@ -24,9 +38,12 @@ export function PushPermissionBanner({ userId }: { userId: string }) {
 
   async function handleAllow() {
     setLoading(true);
-    const ok = await requestPushPermission(userId, supabase);
+    const ok = await registerPushNotifications(userId);
     setLoading(false);
-    if (ok) setVisible(false);
+    if (ok) {
+      setVisible(false);
+      toast.success("Bildirimler aktif edildi!");
+    }
   }
 
   function handleDismiss() {

@@ -67,7 +67,7 @@ export async function POST(request: Request) {
       .select("subscription")
       .in("user_id", userIds);
 
-    const pushPayload = JSON.stringify({ title, body, url, tag: "harcirah" });
+    const pushPayload = JSON.stringify({ title, body, url, tag: "tamga-notification" });
     let sent = 0;
     for (const row of rows ?? []) {
       const sub = (row as { subscription: unknown }).subscription;
