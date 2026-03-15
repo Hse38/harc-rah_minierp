@@ -182,9 +182,10 @@ export function DeneyapClient({
   const recentForUi = displayData?.recentExpenses?.slice(0, 3) ?? [];
   const recentFive = displayData?.recentExpenses?.slice(0, 5) ?? [];
   const lastMonthTotal = monthlyData[4]?.toplam ?? 0;
+  const monthTotalForTrend = displayData?.monthlySpending ?? 0;
   const trendPct =
-    lastMonthTotal > 0 && monthTotal > 0
-      ? Math.round(((monthTotal - lastMonthTotal) / lastMonthTotal) * 100)
+    lastMonthTotal > 0 && monthTotalForTrend > 0
+      ? Math.round(((monthTotalForTrend - lastMonthTotal) / lastMonthTotal) * 100)
       : null;
   const thisMonthApprovedAmount = useMemo(
     () =>
