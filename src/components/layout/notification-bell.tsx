@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bell, X } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserClient } from "@supabase/ssr";
 import type { Notification } from "@/types";
 import { toast } from "sonner";
 import {
@@ -38,28 +38,32 @@ export function NotificationBell({
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const router = useRouter();
-  const supabase = createClient();
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   useEffect(() => {
-    const fetchInitial = async () => {
+    const fetchNotifications = async () => {
       const { data } = await supabase
         .from("notifications")
-        .select("id,message,expense_id,is_read,created_at,recipient_id")
+        .select("*")
         .eq("recipient_id", userId)
+        .eq("is_read", false)
         .order("created_at", { ascending: false })
-        .limit(10);
-      setNotifications((data as Notification[]) || []);
-      const { count } = await supabase
-        .from("notifications")
-        .select("id", { count: "exact", head: true })
-        .eq("recipient_id", userId)
-        .eq("is_read", false);
-      setUnreadCount(count ?? 0);
+        .limit(20);
+
+      if (data) {
+        setNotifications((data as Notification[]) || []);
+        setUnreadCount(data.length);
+      }
     };
-    fetchInitial();
+
+    fetchNotifications();
 
     const channel = supabase
-      .channel("my-notifications")
+      .channel(`notifications-${userId}`)
       .on(
         "postgres_changes",
         {
@@ -69,13 +73,18 @@ export function NotificationBell({
           filter: `recipient_id=eq.${userId}`,
         },
         (payload) => {
+          console.log("Yeni bildirim geldi:", payload);
           const row = payload.new as Notification;
           setNotifications((prev) => [row, ...prev]);
           setUnreadCount((prev) => prev + 1);
-          if (row.message) toast.info(row.message, { position: "bottom-right" });
+          if (row.message) {
+            toast.info(row.message, { duration: 5000, position: "bottom-right" });
+          }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("Realtime subscription status:", status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
