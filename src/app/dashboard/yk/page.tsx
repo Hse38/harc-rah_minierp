@@ -287,6 +287,15 @@ export default function YkPage() {
     }));
   }, [regionCards]);
 
+  const regionBarDataForChart = useMemo(() => {
+    return regionCards.map((r) => ({
+      bolge: regionToTurkish(r.bolge),
+      Onaylanan: r.approved,
+      Bekleyen: r.pending,
+      Reddedilen: r.rejected,
+    }));
+  }, [regionCards]);
+
   const thisMonthStart = useMemo(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1), []);
   const thisMonthEnd = useMemo(() => new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59), []);
   const thisMonthSpentByRegion = useMemo(() => {
@@ -607,80 +616,93 @@ export default function YkPage() {
         )}
 
         {activeTab === "bolgeler" && (
-          <div className="space-y-4">
-            {regionCards.map((r) => {
-              const slug = regionToSlug(r.bolge);
-              const limit = slug ? (regionLimits[slug] ?? 0) : 0;
-              const spent = slug ? (thisMonthSpentByRegion[slug] ?? 0) : 0;
-              const limitPct = limit > 0 ? (spent / limit) * 100 : 0;
-              const overLimit = limit > 0 && spent >= limit;
-              return (
-                <Card
-                  key={r.bolge}
-                  className={`rounded-2xl shadow-sm ${overLimit ? "border-2 border-red-400" : ""}`}
-                >
-                  <CardContent className="p-4 space-y-2">
-                    <div className="flex justify-between items-start gap-2">
-                      <span className="font-medium text-slate-800">{regionToTurkish(r.bolge)}</span>
-                      {overLimit && (
-                        <span className="rounded bg-red-600 px-2 py-0.5 text-xs font-bold text-white">
-                          LİMİT AŞILDI
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="font-semibold text-slate-800">{formatCurrency(r.toplam)}</span>
-                    </div>
-                    {limit > 0 && (
-                      <div className="space-y-1">
-                        <p className="text-xs text-slate-600">
-                          Bu ay: {formatCurrency(spent)} / Limit: {formatCurrency(limit)}
-                        </p>
-                        <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${overLimit ? "bg-red-500" : limitPct >= 90 ? "bg-orange-500" : limitPct >= 70 ? "bg-amber-500" : "bg-green-500"}`}
-                            style={{ width: `${Math.min(limitPct, 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                    )}
-                    <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-[#2563EB]"
-                        style={{ width: `${r.pct}%` }}
-                      />
-                    </div>
-                    <div className="flex justify-between text-xs text-slate-500">
-                      <span>{r.count} harcama</span>
-                      <span>Ort. {formatCurrency(r.ortalama)}</span>
-                      <span className="flex items-center gap-0.5">
-                        {r.trend >= 0 ? (
-                          <TrendingUp className="h-3 w-3 text-[#16A34A]" />
-                        ) : (
-                          <TrendingDown className="h-3 w-3 text-[#DC2626]" />
+          <div className="space-y-4 md:max-w-5xl md:mx-auto md:px-6 lg:px-10">
+            <div className="hidden md:block mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Bölge Analizi</h2>
+              <p className="text-sm text-gray-500 mt-0.5">Tüm bölgelerin harcama ve durum özeti</p>
+            </div>
+
+            <div className="space-y-4 md:grid md:grid-cols-2 md:gap-6 lg:grid-cols-3 md:space-y-0">
+              {regionCards.map((r) => {
+                const slug = regionToSlug(r.bolge);
+                const limit = slug ? (regionLimits[slug] ?? 0) : 0;
+                const spent = slug ? (thisMonthSpentByRegion[slug] ?? 0) : 0;
+                const limitPct = limit > 0 ? (spent / limit) * 100 : 0;
+                const overLimit = limit > 0 && spent >= limit;
+                return (
+                  <Card
+                    key={r.bolge}
+                    className={`rounded-2xl shadow-sm ${overLimit ? "border-2 border-red-400" : ""}`}
+                  >
+                    <CardContent className="p-4 space-y-2">
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="font-medium md:text-xl md:font-bold text-slate-800">{regionToTurkish(r.bolge)}</span>
+                        {overLimit && (
+                          <span className="rounded bg-red-600 px-2 py-0.5 text-xs font-bold text-white">
+                            LİMİT AŞILDI
+                          </span>
                         )}
-                        {r.trend >= 0 ? "+" : ""}
-                        {r.trend.toFixed(0)}%
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                      </div>
+                      <div className="flex justify-between text-sm md:block">
+                        <span className="font-semibold text-slate-800 md:text-3xl md:font-bold md:text-blue-700">{formatCurrency(r.toplam)}</span>
+                      </div>
+                      {limit > 0 && (
+                        <div className="space-y-1">
+                          <p className="text-xs text-slate-600">
+                            Bu ay: {formatCurrency(spent)} / Limit: {formatCurrency(limit)}
+                          </p>
+                          <div className="h-2 md:h-3 rounded-full bg-slate-100 overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${overLimit ? "bg-red-500" : limitPct >= 90 ? "bg-orange-500" : limitPct >= 70 ? "bg-amber-500" : "bg-green-500"}`}
+                              style={{ width: `${Math.min(limitPct, 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                      <div className="h-2 md:h-3 rounded-full bg-slate-100 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-[#2563EB]"
+                          style={{ width: `${r.pct}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-xs text-slate-500 md:flex-col md:gap-1">
+                        <span className="flex items-center gap-1.5 md:flex-initial">
+                          <List className="h-3.5 w-3.5 hidden md:inline text-slate-400" />
+                          {r.count} harcama
+                        </span>
+                        <span className="flex items-center gap-1.5 md:flex-initial">
+                          <BarChart2 className="h-3.5 w-3.5 hidden md:inline text-slate-400" />
+                          Ort. {formatCurrency(r.ortalama)}
+                        </span>
+                        <span className={cn(
+                          "flex items-center gap-0.5 md:inline-flex md:rounded-full md:px-2 md:py-0.5 md:text-xs md:font-medium md:mt-1",
+                          r.trend >= 0 ? "text-[#16A34A] md:bg-green-100 md:text-green-800" : "text-[#DC2626] md:bg-red-100 md:text-red-800"
+                        )}>
+                          {r.trend >= 0 ? <TrendingUp className="h-3 w-3 md:h-3.5 md:w-3.5" /> : <TrendingDown className="h-3 w-3 md:h-3.5 md:w-3.5" />}
+                          {r.trend >= 0 ? "+" : ""}
+                          {r.trend.toFixed(0)}%
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
 
             {regionBarData.length > 0 && (
-              <Card className="rounded-2xl shadow-sm">
-                <CardContent className="p-4">
-                  <h3 className="text-sm font-medium text-slate-700 mb-2">
+              <Card className="rounded-2xl shadow-sm border-gray-200 overflow-hidden">
+                <CardContent className="p-4 md:p-5">
+                  <h3 className="text-sm md:text-[14px] font-semibold text-[#374151] mb-0.5">
                     Bölge · Durum (adet)
                   </h3>
-                  <div className="h-56">
+                  <p className="text-xs text-gray-500 mb-3 hidden md:block">Onaylanan, bekleyen ve reddedilen harcama dağılımı</p>
+                  <div className="h-56 md:h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
-                        data={regionBarData}
+                        data={regionBarDataForChart}
                         margin={{ top: 5, right: 5, left: -10, bottom: 5 }}
                       >
-                        <XAxis dataKey="bolge" tick={{ fontSize: 9 }} />
+                        <XAxis dataKey="bolge" tick={{ fontSize: 10 }} />
                         <YAxis tick={{ fontSize: 10 }} />
                         <Tooltip />
                         <Legend />
@@ -695,7 +717,7 @@ export default function YkPage() {
             )}
 
             <div className="rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-              <h3 className="text-sm font-medium text-slate-700 p-3 bg-slate-50">
+              <h3 className="text-sm font-medium text-slate-700 p-3 bg-slate-50 md:text-[14px] md:font-semibold md:text-[#374151]">
                 İl bazlı özet (en çok harcayan üstte)
               </h3>
               <ul className="divide-y divide-slate-100">
@@ -707,15 +729,20 @@ export default function YkPage() {
                   ilList.map((row) => (
                     <li
                       key={row.il}
-                      className="p-3 flex flex-wrap items-center justify-between gap-2 text-sm"
+                      className="p-3 flex flex-wrap items-center justify-between gap-2 text-sm md:flex-nowrap md:items-center md:gap-4"
                     >
-                      <span className="font-medium">{row.il}</span>
-                      <span className="text-slate-800">{formatCurrency(row.toplam)}</span>
-                      <span className="text-slate-500">{row.count} adet</span>
-                      <span className="flex gap-1 text-xs">
-                        <span className="text-[#16A34A]">O:{row.approved}</span>
-                        <span className="text-[#D97706]">B:{row.pending}</span>
-                        <span className="text-[#DC2626]">R:{row.rejected}</span>
+                      <span className="font-medium md:font-bold w-full md:w-auto md:min-w-[100px]">{row.il}</span>
+                      <span className="text-slate-800 md:font-bold md:text-blue-700 md:ml-auto">{formatCurrency(row.toplam)}</span>
+                      <span className="text-slate-500 md:rounded-full md:bg-gray-100 md:px-2 md:py-0.5 md:text-xs">{row.count} adet</span>
+                      <span className="flex gap-1 text-xs md:flex md:gap-2 md:flex-wrap md:justify-end">
+                        <span className="rounded bg-green-100 text-green-800 px-1.5 py-0.5 text-xs font-medium hidden md:inline">{row.approved} onaylı</span>
+                        <span className="rounded bg-amber-100 text-amber-800 px-1.5 py-0.5 text-xs font-medium hidden md:inline">{row.pending} bekliyor</span>
+                        <span className="rounded bg-red-100 text-red-800 px-1.5 py-0.5 text-xs font-medium hidden md:inline">{row.rejected} reddedildi</span>
+                        <span className="flex gap-1 text-xs md:hidden">
+                          <span className="text-[#16A34A]">O:{row.approved}</span>
+                          <span className="text-[#D97706]">B:{row.pending}</span>
+                          <span className="text-[#DC2626]">R:{row.rejected}</span>
+                        </span>
                       </span>
                     </li>
                   ))
