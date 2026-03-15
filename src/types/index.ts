@@ -22,6 +22,22 @@ export type ExpenseType =
   | "Malzeme"
   | "Diğer";
 
+export type ProfileLanguage = "tr" | "az" | "ky";
+
+export interface NotificationPrefs {
+  expense_approved: boolean;
+  expense_rejected: boolean;
+  expense_pending: boolean;
+  limit_warning: boolean;
+}
+
+export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
+  expense_approved: true,
+  expense_rejected: true,
+  expense_pending: true,
+  limit_warning: true,
+};
+
 export interface Profile {
   id: string;
   full_name: string;
@@ -31,6 +47,8 @@ export interface Profile {
   bolge: string | null;
   phone: string | null;
   created_at: string;
+  language?: ProfileLanguage | null;
+  notification_prefs?: NotificationPrefs | null;
 }
 
 export interface Expense {
