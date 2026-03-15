@@ -23,8 +23,7 @@ import type { Profile } from "@/types";
 import type { Expense } from "@/types";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, AlertCircle } from "lucide-react";
-import { sendPushFromClient } from "@/lib/push-notifications";
-import { getRecipientIds } from "@/lib/notification-recipients";
+import { notifyApi } from "@/lib/notify-api";
 import { EXPENSE_FIELDS_FULL, PROFILE_FIELDS_FORM } from "@/lib/expense-fields";
 
 const EXPENSE_TYPES: ExpenseType[] = [
@@ -162,25 +161,16 @@ export default function DeneyapDuzenlePage() {
           })
           .eq("id", expense.id);
         if (expense.bolge) {
-          const bolgeRecipientIds = await getRecipientIds(supabase, { role: "bolge", bolge: expense.bolge });
-          if (bolgeRecipientIds.length > 0) {
-            await supabase.from("notifications").insert(
-              bolgeRecipientIds.map((recipient_id) => ({
-                recipient_id,
-                recipient_role: "bolge",
-                message: `[${expense.expense_number}] tekrar gönderildi, bölge onayı bekleniyor.`,
-                expense_id: expense.id,
-              }))
-            );
-          }
+          notifyApi({
+            toRole: "bolge",
+            bolge: expense.bolge,
+            expenseId: expense.id,
+            message: `[${expense.expense_number}] tekrar gönderildi, bölge onayı bekleniyor.`,
+            pushTitle: "TAMGA - Harcama tekrar gönderildi",
+            pushBody: `${expense.expense_number} bölge onayı bekliyor`,
+            pushUrl: "/dashboard/bolge",
+          });
         }
-        sendPushFromClient({
-          recipient_role: "bolge",
-          expense_id: expense.id,
-          title: "Harcama tekrar gönderildi",
-          body: `${expense.expense_number} bölge onayı bekliyor`,
-          url: "/dashboard/bolge",
-        });
         toast.success(
           `${expense.expense_number} tekrar gönderildi, bölge onayı bekleniyor.`
         );

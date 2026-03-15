@@ -22,8 +22,7 @@ import type { ReceiptAnalysis } from "@/types";
 import type { Profile } from "@/types";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { sendPushFromClient } from "@/lib/push-notifications";
-import { getRecipientIds } from "@/lib/notification-recipients";
+import { notifyApi } from "@/lib/notify-api";
 import { PROFILE_FIELDS_FORM } from "@/lib/expense-fields";
 import { formatCurrency } from "@/lib/utils";
 
@@ -156,23 +155,13 @@ export default function BolgeYeniPage() {
         const expenseId = (inserted as { id: string } | null)?.id;
 
         if (expenseId) {
-          const koordIds = await getRecipientIds(supabase, { role: "koordinator" });
-          if (koordIds.length > 0) {
-            await supabase.from("notifications").insert(
-              koordIds.map((recipient_id) => ({
-                recipient_id,
-                recipient_role: "koordinator",
-                message: `[${expenseNumber}] bölge sorumlusu tarafından açıldı, TÇK onayı bekliyor.`,
-                expense_id: expenseId,
-              }))
-            );
-          }
-          sendPushFromClient({
-            recipient_role: "koordinator",
-            expense_id: expenseId,
-            title: "Yeni harcama (bölge)",
-            body: `${profile.full_name} · ${expenseNumber} · ${formatCurrency(amount)}`,
-            url: "/dashboard/koordinator",
+          notifyApi({
+            toRole: "koordinator",
+            expenseId,
+            message: `[${expenseNumber}] bölge sorumlusu tarafından açıldı, TÇK onayı bekliyor.`,
+            pushTitle: "TAMGA - Yeni Harcama (bölge)",
+            pushBody: `${profile.full_name} · ${expenseNumber} · ${formatCurrency(amount)}`,
+            pushUrl: "/dashboard/koordinator",
           });
         }
 

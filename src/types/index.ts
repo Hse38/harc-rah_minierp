@@ -29,6 +29,7 @@ export interface NotificationPrefs {
   expense_rejected: boolean;
   expense_pending: boolean;
   limit_warning: boolean;
+  push_enabled: boolean;
 }
 
 export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
@@ -36,6 +37,7 @@ export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
   expense_rejected: true,
   expense_pending: true,
   limit_warning: true,
+  push_enabled: true,
 };
 
 export interface Profile {

@@ -20,8 +20,7 @@ import { ApprovalModal } from "@/components/approval/approval-modal";
 import { ReceiptLightbox } from "@/components/expenses/receipt-lightbox";
 import { Check, X, BarChart2, Clock, CheckCircle, FileImage, Wallet, Pencil, ChevronRight, Activity } from "lucide-react";
 import { toast } from "sonner";
-import { sendPushFromClient } from "@/lib/push-notifications";
-import { getRecipientIds } from "@/lib/notification-recipients";
+import { notifyApi } from "@/lib/notify-api";
 import type { DashboardKoordinatorResponse } from "@/lib/dashboard-data";
 
 const KoordinatorCharts = dynamic(
@@ -299,54 +298,44 @@ export function KoordinatorClient({
           reviewed_at_koord: new Date().toISOString(),
         })
         .eq("id", expense.id);
-      const muhasebeIds = await getRecipientIds(supabase, { role: "muhasebe" });
-      const approveNotifications: { recipient_id: string; recipient_role: string; message: string; expense_id: string }[] = [
-        ...muhasebeIds.map((recipient_id) => ({
-          recipient_id,
-          recipient_role: "muhasebe",
-          message: `[${expense.expense_number}] ödemeye hazır.`,
-          expense_id: expense.id,
-        })),
-        {
-          recipient_id: expense.submitter_id,
-          recipient_role: "deneyap",
-          message: `[${expense.expense_number}] onaylandı.`,
-          expense_id: expense.id,
-        },
-      ];
-      if (approveNotifications.length > 0) {
-        await supabase.from("notifications").insert(approveNotifications);
-      }
-      sendPushFromClient({
-        recipient_role: "muhasebe",
-        expense_id: expense.id,
-        title: "Yeni ödeme bekliyor",
-        body: `${expense.expense_number} ödemeye hazır`,
-        url: "/dashboard/muhasebe",
+      notifyApi({
+        toRole: "muhasebe",
+        expenseId: expense.id,
+        message: `[${expense.expense_number}] ödemeye hazır.`,
+        pushTitle: "TAMGA - Ödeme Bekliyor",
+        pushBody: `${expense.expense_number} ödemeye hazır`,
+        pushUrl: "/dashboard/muhasebe",
       });
-      sendPushFromClient({
-        recipient_id: expense.submitter_id,
-        title: "Harcamanız onaylandı",
-        body: `${expense.expense_number} ödeme yapılacak`,
-        url: "/dashboard/deneyap",
+      notifyApi({
+        recipientId: expense.submitter_id,
+        recipientRole: "deneyap",
+        expenseId: expense.id,
+        message: `[${expense.expense_number}] onaylandı.`,
+        pushTitle: "TAMGA - Onaylandı!",
+        pushBody: `${expense.expense_number} onaylandı, ödeme yapılacak`,
+        pushUrl: "/dashboard/deneyap",
       });
       setAllExpenses((prev) =>
         prev.map((e) => (e.id === expense.id ? { ...e, status: "approved_koord" as const } : e))
       );
       toast.success("Onaylandı.");
       checkLimitAfterApprove(supabase, { ...expense, status: "approved_koord" }).then((r) => {
-        if (r.notified && r.message) {
-          sendPushFromClient({
-            recipient_role: "koordinator",
-            title: "Bölge limiti uyarısı",
-            body: r.message,
-            url: "/dashboard/koordinator",
+        if (r.notified && r.message && r.expenseId) {
+          notifyApi({
+            toRole: "koordinator",
+            expenseId: r.expenseId,
+            message: r.message,
+            pushTitle: "TAMGA - Limit Uyarısı",
+            pushBody: r.message,
+            pushUrl: "/dashboard/koordinator",
           });
-          sendPushFromClient({
-            recipient_role: "yk",
-            title: "Bölge limiti uyarısı",
-            body: r.message,
-            url: "/dashboard/yk",
+          notifyApi({
+            toRole: "yk",
+            expenseId: r.expenseId,
+            message: r.message,
+            pushTitle: "TAMGA - Limit Uyarısı",
+            pushBody: r.message,
+            pushUrl: "/dashboard/yk",
           });
         }
       }).catch(() => {});
@@ -361,17 +350,14 @@ export function KoordinatorClient({
     setActionLoading(true);
     try {
       await supabase.from("expenses").update({ status: "rejected_koord" }).eq("id", expense.id);
-      await supabase.from("notifications").insert({
-        recipient_id: expense.submitter_id,
-        recipient_role: "deneyap",
+      notifyApi({
+        recipientId: expense.submitter_id,
+        recipientRole: "deneyap",
+        expenseId: expense.id,
         message: `[${expense.expense_number}] koordinatör tarafından reddedildi.`,
-        expense_id: expense.id,
-      });
-      sendPushFromClient({
-        recipient_id: expense.submitter_id,
-        title: "Harcama reddedildi",
-        body: `${expense.expense_number} koordinatör tarafından reddedildi`,
-        url: "/dashboard/deneyap",
+        pushTitle: "TAMGA - Reddedildi",
+        pushBody: `${expense.expense_number} numaralı harcamanız reddedildi`,
+        pushUrl: "/dashboard/deneyap",
       });
       setRejectModal(null);
       setAllExpenses((prev) =>

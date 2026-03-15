@@ -2,9 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Expense } from "@/types";
 import { regionToSlug } from "./region-names";
 import { bolgeAdi } from "./utils";
-import { getRecipientIds } from "./notification-recipients";
 
-export type CheckLimitResult = { notified: boolean; pct?: number; message?: string };
+export type CheckLimitResult = { notified: boolean; pct?: number; message?: string; expenseId?: string };
 
 /** Koordinatör onayı sonrası bölge limit kontrolü. Eşiklerde koordinator + YK için bildirim ekler. */
 export async function checkLimitAfterApprove(
@@ -53,15 +52,5 @@ export async function checkLimitAfterApprove(
 
   if (!message) return { notified: false, pct };
 
-  const koordIds = await getRecipientIds(supabase, { role: "koordinator" });
-  const ykIds = await getRecipientIds(supabase, { role: "yk" });
-  const rows = [
-    ...koordIds.map((recipient_id) => ({ recipient_id, recipient_role: "koordinator" as const, message, expense_id: expense.id })),
-    ...ykIds.map((recipient_id) => ({ recipient_id, recipient_role: "yk" as const, message, expense_id: expense.id })),
-  ];
-  if (rows.length > 0) {
-    await supabase.from("notifications").insert(rows);
-  }
-
-  return { notified: true, pct, message };
+  return { notified: true, pct, message, expenseId: expense.id };
 }

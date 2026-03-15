@@ -22,8 +22,7 @@ import type { ReceiptAnalysis } from "@/types";
 import type { Profile } from "@/types";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { sendPushFromClient } from "@/lib/push-notifications";
-import { getRecipientIds } from "@/lib/notification-recipients";
+import { notifyApi } from "@/lib/notify-api";
 import { PROFILE_FIELDS_FORM } from "@/lib/expense-fields";
 import { formatCurrency } from "@/lib/utils";
 
@@ -152,23 +151,14 @@ export default function DeneyapYeniPage() {
         const expenseId = (inserted as { id: string } | null)?.id;
 
         if (expenseId && profile.bolge) {
-          const bolgeRecipientIds = await getRecipientIds(supabase, { role: "bolge", bolge: profile.bolge });
-          if (bolgeRecipientIds.length > 0) {
-            await supabase.from("notifications").insert(
-              bolgeRecipientIds.map((recipient_id) => ({
-                recipient_id,
-                recipient_role: "bolge",
-                message: `[${expenseNumber}] yeni harcama bölge onayı bekliyor.`,
-                expense_id: expenseId,
-              }))
-            );
-          }
-          sendPushFromClient({
-            recipient_role: "bolge",
-            expense_id: expenseId,
-            title: "Yeni harcama onay bekliyor",
-            body: `${profile.full_name} · ${expenseNumber} · ${formatCurrency(amount)}`,
-            url: "/dashboard/bolge",
+          notifyApi({
+            toRole: "bolge",
+            bolge: profile.bolge,
+            expenseId,
+            message: `[${expenseNumber}] yeni harcama bölge onayı bekliyor.`,
+            pushTitle: "TAMGA - Yeni Harcama",
+            pushBody: `${profile.full_name} · ${expenseNumber} · ${formatCurrency(amount)} onay bekliyor`,
+            pushUrl: "/dashboard/bolge",
           });
         }
 

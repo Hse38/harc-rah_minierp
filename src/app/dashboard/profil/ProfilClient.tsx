@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile, ProfileLanguage, NotificationPrefs } from "@/types";
+import { DEFAULT_NOTIFICATION_PREFS } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,15 +68,8 @@ export function ProfilClient({
   const [phone, setPhone] = useState(initialProfile?.phone ?? "");
   const [newPassword, setNewPassword] = useState("");
   const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
-  const [notificationPrefs, setNotificationPrefs] = useState<
-    NotificationPrefs
-  >(
-    (initialProfile?.notification_prefs as NotificationPrefs) ?? {
-      expense_approved: true,
-      expense_rejected: true,
-      expense_pending: true,
-      limit_warning: true,
-    }
+  const [notificationPrefs, setNotificationPrefs] = useState<NotificationPrefs>(
+    { ...DEFAULT_NOTIFICATION_PREFS, ...(initialProfile?.notification_prefs as NotificationPrefs | undefined) }
   );
   const [saving, setSaving] = useState(false);
   const [signingOutAll, setSigningOutAll] = useState(false);
@@ -379,6 +373,20 @@ export function ProfilClient({
               className="rounded border-slate-300"
             />
             <span className="text-sm">{t("misc_limit_uyarilari", lang)}</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={notificationPrefs.push_enabled}
+              onChange={(e) =>
+                setNotificationPrefs((p) => ({
+                  ...p,
+                  push_enabled: e.target.checked,
+                }))
+              }
+              className="rounded border-slate-300"
+            />
+            <span className="text-sm">{t("misc_web_bildirimleri", lang)}</span>
           </label>
         </CardContent>
       </Card>

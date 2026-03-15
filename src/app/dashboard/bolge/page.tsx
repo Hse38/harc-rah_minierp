@@ -18,8 +18,7 @@ import { WarnModal } from "@/components/approval/warn-modal";
 import { Receipt, Check, AlertCircle, X, BarChart2, Clock, CheckCircle, Plus } from "lucide-react";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { toast } from "sonner";
-import { sendPushFromClient } from "@/lib/push-notifications";
-import { getRecipientIds } from "@/lib/notification-recipients";
+import { notifyApi } from "@/lib/notify-api";
 import {
   Dialog,
   DialogContent,
@@ -193,23 +192,13 @@ export default function BolgePage() {
         })
         .eq("id", expense.id);
 
-      const koordIds = await getRecipientIds(supabase, { role: "koordinator" });
-      if (koordIds.length > 0) {
-        await supabase.from("notifications").insert(
-          koordIds.map((recipient_id) => ({
-            recipient_id,
-            recipient_role: "koordinator",
-            message: `[${expense.expense_number}] bölge onaylandı, koordinatör onayı bekleniyor.`,
-            expense_id: expense.id,
-          }))
-        );
-      }
-      sendPushFromClient({
-        recipient_role: "koordinator",
-        expense_id: expense.id,
-        title: "Harcama koordinatör onayı bekliyor",
-        body: `${expense.expense_number} bölge onaylandı`,
-        url: "/dashboard/koordinator",
+      notifyApi({
+        toRole: "koordinator",
+        expenseId: expense.id,
+        message: `[${expense.expense_number}] bölge onaylandı, koordinatör onayı bekleniyor.`,
+        pushTitle: "TAMGA - Onay Bekleniyor",
+        pushBody: `${expense.expense_number} bölge onaylandı, koordinatör onayı bekleniyor`,
+        pushUrl: "/dashboard/koordinator",
       });
 
       setAllExpenses((prev) =>
@@ -245,36 +234,22 @@ export default function BolgePage() {
         })
         .eq("id", expense.id);
 
-      const koordIds = await getRecipientIds(supabase, { role: "koordinator" });
-      const warnNotifications: { recipient_id: string; recipient_role: string; message: string; expense_id: string }[] = [
-        ...koordIds.map((recipient_id) => ({
-          recipient_id,
-          recipient_role: "koordinator",
-          message: `[${expense.expense_number}] bölge onaylandı (uyarılı), koordinatör onayı bekleniyor.`,
-          expense_id: expense.id,
-        })),
-        {
-          recipient_id: expense.submitter_id,
-          recipient_role: "deneyap",
-          message: `[${expense.expense_number}] bölge sorumlusu notu: ${message}`,
-          expense_id: expense.id,
-        },
-      ];
-      if (warnNotifications.length > 0) {
-        await supabase.from("notifications").insert(warnNotifications);
-      }
-      sendPushFromClient({
-        recipient_role: "koordinator",
-        expense_id: expense.id,
-        title: "Harcama koordinatör onayı bekliyor",
-        body: `${expense.expense_number} bölge onaylandı (uyarılı)`,
-        url: "/dashboard/koordinator",
+      notifyApi({
+        toRole: "koordinator",
+        expenseId: expense.id,
+        message: `[${expense.expense_number}] bölge onaylandı (uyarılı), koordinatör onayı bekleniyor.`,
+        pushTitle: "TAMGA - Uyarılı Onay",
+        pushBody: `${expense.expense_number} uyarılı onaylandı`,
+        pushUrl: "/dashboard/koordinator",
       });
-      sendPushFromClient({
-        recipient_id: expense.submitter_id,
-        title: "Bölge sorumlusu notu",
-        body: `${expense.expense_number}: ${message}`,
-        url: "/dashboard/deneyap",
+      notifyApi({
+        recipientId: expense.submitter_id,
+        recipientRole: "deneyap",
+        expenseId: expense.id,
+        message: `[${expense.expense_number}] bölge sorumlusu notu: ${message}`,
+        pushTitle: "TAMGA - Uyarılı Onay",
+        pushBody: `Harcamanız uyarıyla onaylandı: ${message}`,
+        pushUrl: "/dashboard/deneyap",
       });
 
       setWarnModal(null);
@@ -304,17 +279,14 @@ export default function BolgePage() {
         .update({ status: "rejected_bolge" })
         .eq("id", expenseId);
 
-      await supabase.from("notifications").insert({
-        recipient_id: expense.submitter_id,
-        recipient_role: "deneyap",
+      notifyApi({
+        recipientId: expense.submitter_id,
+        recipientRole: "deneyap",
+        expenseId: expenseId,
         message: `[${expense.expense_number}] bölge sorumlusu tarafından reddedildi.`,
-        expense_id: expenseId,
-      });
-      sendPushFromClient({
-        recipient_id: expense.submitter_id,
-        title: "Harcamanız reddedildi",
-        body: `${expense.expense_number} bölge sorumlusu tarafından reddedildi`,
-        url: "/dashboard/deneyap",
+        pushTitle: "TAMGA - Reddedildi",
+        pushBody: `${expense.expense_number} numaralı harcamanız reddedildi`,
+        pushUrl: "/dashboard/deneyap",
       });
 
       setRejectModal(null);
