@@ -4,7 +4,9 @@ import { Topbar } from "@/components/layout/topbar";
 import { PushPermissionBanner } from "@/components/layout/push-permission-banner";
 import { PushNotificationSetup } from "@/components/layout/PushNotificationSetup";
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
+import { AnnouncementBanner } from "@/components/layout/announcement-banner";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { AnnouncementsProvider } from "@/contexts/AnnouncementsContext";
 import type { Language } from "@/lib/i18n";
 
 function isNextRedirect(e: unknown): boolean {
@@ -59,18 +61,21 @@ export default async function DashboardLayout({
     <LanguageProvider initialLang={initialLang}>
       <div className="min-h-screen bg-slate-50 md:flex">
         <DashboardSidebar userName={fullName} userRole={role} />
-        <div className="w-full max-w-[430px] mx-auto shadow-lg md:ml-40 lg:ml-64 md:max-w-[480px] md:mx-0 lg:max-w-none lg:flex-1 lg:min-w-0 flex flex-col">
-          <Topbar
-            userName={fullName}
-            userRole={role}
-            userId={user.id}
-          />
-          <PushNotificationSetup userId={user.id} />
-          <PushPermissionBanner userId={user.id} />
-          <main className="flex-1 p-4 pb-safe md:p-6 md:px-8 max-w-6xl mx-auto w-full">
-            {children}
-          </main>
-        </div>
+        <AnnouncementsProvider>
+          <div className="w-full max-w-[430px] mx-auto shadow-lg md:ml-40 lg:ml-64 md:max-w-[480px] md:mx-0 lg:max-w-none lg:flex-1 lg:min-w-0 flex flex-col">
+            <Topbar
+              userName={fullName}
+              userRole={role}
+              userId={user.id}
+            />
+            <PushNotificationSetup userId={user.id} />
+            <PushPermissionBanner userId={user.id} />
+            <main className="flex-1 p-4 pb-safe md:p-6 md:px-8 max-w-6xl mx-auto w-full flex flex-col">
+              <AnnouncementBanner />
+              <div className="flex-1">{children}</div>
+            </main>
+          </div>
+        </AnnouncementsProvider>
       </div>
     </LanguageProvider>
   );

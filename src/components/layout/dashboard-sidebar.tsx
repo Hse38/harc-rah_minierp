@@ -18,6 +18,10 @@ import {
   MapPin,
   User,
   LogOut,
+  Users,
+  FileText,
+  Megaphone,
+  Activity,
 } from "lucide-react";
 import { useLang } from "@/contexts/LanguageContext";
 import { t, type TranslationKey } from "@/lib/i18n";
@@ -75,6 +79,14 @@ function getNavForRole(role: string): NavItem[] {
         { labelKey: "nav_regions", href: "/dashboard/yk?tab=bolgeler", icon: MapPin },
         { labelKey: "nav_all_expenses", href: "/dashboard/yk?tab=harcamalar", icon: List },
       ];
+    case "admin":
+      return [
+        { labelKey: "nav_dashboard", href: "/dashboard/admin", icon: BarChart2 },
+        { labelKey: "admin_nav_users", href: "/dashboard/admin/kullanicilar", icon: Users },
+        { labelKey: "admin_nav_expenses", href: "/dashboard/admin/harcamalar", icon: FileText },
+        { labelKey: "admin_nav_announcements", href: "/dashboard/admin/duyurular", icon: Megaphone },
+        { labelKey: "admin_nav_logs", href: "/dashboard/admin/loglar", icon: Activity },
+      ];
     default:
       return [{ labelKey: "nav_dashboard", href: "/dashboard", icon: BarChart2 }];
   }
@@ -110,11 +122,19 @@ export function DashboardSidebar({
     router.refresh();
   }
 
+  const isAdmin = userRole === "admin";
+  const asideClass = isAdmin
+    ? "hidden md:flex md:flex-col md:fixed md:left-0 md:top-0 md:bottom-0 w-40 lg:w-64 bg-[#1E293B] border-r border-slate-700 z-50"
+    : "hidden md:flex md:flex-col md:fixed md:left-0 md:top-0 md:bottom-0 w-40 lg:w-64 bg-white border-r border-slate-200 z-50";
+  const headerBorder = isAdmin ? "border-slate-700" : "border-slate-100";
+  const logoBg = isAdmin ? "bg-slate-700/50 border-slate-600" : "bg-slate-100 border-slate-200/80";
+  const titleClass = isAdmin ? "font-bold text-white text-base lg:text-lg tracking-tight uppercase" : "font-bold text-slate-900 text-base lg:text-lg tracking-tight uppercase";
+
   return (
-    <aside className="hidden md:flex md:flex-col md:fixed md:left-0 md:top-0 md:bottom-0 w-40 lg:w-64 bg-white border-r border-slate-200 z-50">
-      <div className="p-4 lg:p-5 border-b border-slate-100">
+    <aside className={asideClass}>
+      <div className={`p-4 lg:p-5 border-b ${headerBorder}`}>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 lg:w-11 lg:h-11 rounded-xl bg-slate-100 border border-slate-200/80 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+          <div className={`w-10 h-10 lg:w-11 lg:h-11 rounded-xl border flex items-center justify-center overflow-hidden shrink-0 shadow-sm ${logoBg}`}>
             <Image
               src={T3_LOGO_URL}
               alt="TAMGA"
@@ -124,34 +144,44 @@ export function DashboardSidebar({
               priority
             />
           </div>
-          <span className="font-bold text-slate-900 text-base lg:text-lg tracking-tight uppercase">TAMGA</span>
+          <div className="flex flex-col gap-1">
+            <span className={titleClass}>TAMGA</span>
+            {isAdmin && (
+              <span className="text-[10px] font-bold text-white bg-red-600 px-2 py-0.5 rounded-full w-fit">ADMİN</span>
+            )}
+          </div>
         </div>
       </div>
-      <div className="p-3 lg:p-4 border-b border-slate-100">
-        <p className="text-xs font-medium text-slate-700 truncate" title={userName}>
+      <div className={`p-3 lg:p-4 border-b ${headerBorder}`}>
+        <p className={`text-xs font-medium truncate ${isAdmin ? "text-slate-300" : "text-slate-700"}`} title={userName}>
           {userName || "Kullanıcı"}
         </p>
-        <Badge variant="secondary" className="text-[10px] mt-1">
-          {t(
-            (userRole === "bolge" ? "misc_bölge_sorumlusu" : userRole === "il" ? "misc_il_sorumlusu" : userRole === "koordinator" ? "misc_koordinator" : userRole === "muhasebe" ? "misc_muhasebe" : userRole === "yk" ? "misc_yk" : "misc_deneyap") as TranslationKey,
-            lang
-          )}
-        </Badge>
+        {!isAdmin && (
+          <Badge variant="secondary" className="text-[10px] mt-1">
+            {t(
+              (userRole === "bolge" ? "misc_bölge_sorumlusu" : userRole === "il" ? "misc_il_sorumlusu" : userRole === "koordinator" ? "misc_koordinator" : userRole === "muhasebe" ? "misc_muhasebe" : userRole === "yk" ? "misc_yk" : "misc_deneyap") as TranslationKey,
+              lang
+            )}
+          </Badge>
+        )}
       </div>
       <nav className="flex-1 p-2 lg:p-3 space-y-0.5 lg:space-y-1 overflow-auto">
         {navItems.map((item) => {
           const active = isActive(item.href);
           const Icon = item.icon;
+          const linkClass = isAdmin
+            ? active
+              ? "bg-slate-700 text-white font-medium"
+              : "text-slate-200 hover:bg-slate-700"
+            : active
+              ? "bg-[#EFF6FF] text-[#2563EB] font-medium lg:bg-blue-50 lg:border-l-2 lg:border-l-[#2563EB] lg:pl-[10px]"
+              : "text-slate-600 hover:bg-slate-100 lg:hover:bg-slate-50";
           return (
             <Link
               key={item.href}
               href={item.href}
               prefetch
-              className={`flex items-center gap-2 rounded-lg px-3 py-2 lg:py-2.5 text-sm transition-colors ${
-                active
-                  ? "bg-[#EFF6FF] text-[#2563EB] font-medium lg:bg-blue-50 lg:border-l-2 lg:border-l-[#2563EB] lg:pl-[10px]"
-                  : "text-slate-600 hover:bg-slate-100 lg:hover:bg-slate-50"
-              }`}
+              className={`flex items-center gap-2 rounded-lg px-3 py-2 lg:py-2.5 text-sm transition-colors ${linkClass}`}
             >
               <Icon className="h-4 w-4 shrink-0" />
               <span className="truncate">{t(item.labelKey, lang)}</span>
@@ -159,11 +189,11 @@ export function DashboardSidebar({
           );
         })}
       </nav>
-      <div className="p-2 lg:p-3 border-t border-slate-100 space-y-0.5">
+      <div className={`p-2 lg:p-3 border-t ${headerBorder} space-y-0.5`}>
         <Link
           href="/dashboard/profil"
           prefetch
-          className="flex items-center gap-2 rounded-lg px-3 py-2 lg:py-2.5 text-sm text-slate-600 hover:bg-slate-100 transition-colors"
+          className={`flex items-center gap-2 rounded-lg px-3 py-2 lg:py-2.5 text-sm transition-colors ${isAdmin ? "text-slate-300 hover:bg-slate-700" : "text-slate-600 hover:bg-slate-100"}`}
         >
           <User className="h-4 w-4 shrink-0" />
           <span className="truncate">{t("nav_profile", lang)}</span>
@@ -171,7 +201,7 @@ export function DashboardSidebar({
         <button
           type="button"
           onClick={handleLogout}
-          className="w-full flex items-center gap-2 rounded-lg px-3 py-2 lg:py-2.5 text-sm text-slate-600 hover:bg-slate-100 transition-colors text-left"
+          className={`w-full flex items-center gap-2 rounded-lg px-3 py-2 lg:py-2.5 text-sm transition-colors text-left ${isAdmin ? "text-slate-300 hover:bg-slate-700" : "text-slate-600 hover:bg-slate-100"}`}
         >
           <LogOut className="h-4 w-4 shrink-0" />
           <span className="truncate">{t("nav_logout", lang)}</span>

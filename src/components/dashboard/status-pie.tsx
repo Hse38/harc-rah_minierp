@@ -11,9 +11,10 @@ const LABELS: Record<ExpenseStatus, string> = {
   approved_koord: "Onaylandı",
   rejected_koord: "Reddedildi",
   paid: "Ödendi",
+  deleted: "Silindi",
 };
 
-const COLORS = ["#EAB308", "#94A3B8", "#3B82F6", "#EF4444", "#22C55E", "#EF4444", "#15803D"];
+const COLORS = ["#EAB308", "#94A3B8", "#3B82F6", "#EF4444", "#22C55E", "#EF4444", "#15803D", "#6B7280"];
 
 type Item = { name: string; value: number; status: ExpenseStatus };
 

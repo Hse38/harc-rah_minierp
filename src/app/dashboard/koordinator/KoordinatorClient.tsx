@@ -275,6 +275,16 @@ export function KoordinatorClient({
       } else {
         await supabase.from("region_limits").insert({ bolge: slug, monthly_limit: value, set_by: user?.id ?? null, updated_at });
       }
+      fetch("/api/system-log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "limit_updated",
+          target_type: "region_limit",
+          target_id: slug,
+          details: { bolge: slug, monthly_limit: value },
+        }),
+      }).catch(() => {});
       setRegionLimits((prev) => ({ ...prev, [slug]: value }));
       setEditingSlug(null);
       toast.success(`${bolgeAdi(slug)} limiti güncellendi.`);
@@ -298,6 +308,16 @@ export function KoordinatorClient({
           reviewed_at_koord: new Date().toISOString(),
         })
         .eq("id", expense.id);
+      fetch("/api/system-log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "expense_approved",
+          target_type: "expense",
+          target_id: expense.id,
+          details: { expense_number: expense.expense_number, amount: expense.amount, submitter_name: expense.submitter_name, by: "koordinator" },
+        }),
+      }).catch(() => {});
       notifyApi({
         toRole: "muhasebe",
         expenseId: expense.id,
@@ -350,6 +370,16 @@ export function KoordinatorClient({
     setActionLoading(true);
     try {
       await supabase.from("expenses").update({ status: "rejected_koord" }).eq("id", expense.id);
+      fetch("/api/system-log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "expense_rejected",
+          target_type: "expense",
+          target_id: expense.id,
+          details: { expense_number: expense.expense_number, amount: expense.amount, submitter_name: expense.submitter_name, by: "koordinator" },
+        }),
+      }).catch(() => {});
       notifyApi({
         recipientId: expense.submitter_id,
         recipientRole: "deneyap",

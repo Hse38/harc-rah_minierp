@@ -4,7 +4,8 @@ export type Role =
   | "bolge"
   | "koordinator"
   | "muhasebe"
-  | "yk";
+  | "yk"
+  | "admin";
 
 export type ExpenseStatus =
   | "pending_bolge"
@@ -13,7 +14,8 @@ export type ExpenseStatus =
   | "rejected_bolge"
   | "approved_koord"
   | "rejected_koord"
-  | "paid";
+  | "paid"
+  | "deleted";
 
 export type ExpenseType =
   | "Ulaşım"

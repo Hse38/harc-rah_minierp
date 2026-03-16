@@ -57,6 +57,7 @@ const STATUS_COLORS: Record<ExpenseStatus, string> = {
   approved_koord: "#16A34A",
   rejected_koord: "#DC2626",
   paid: "#7C3AED",
+  deleted: "#6B7280",
 };
 const STATUS_LABELS: Record<ExpenseStatus, string> = {
   pending_bolge: "Bölge bekliyor",
@@ -66,6 +67,7 @@ const STATUS_LABELS: Record<ExpenseStatus, string> = {
   approved_koord: "Onaylandı",
   rejected_koord: "Red (koord)",
   paid: "Ödendi",
+  deleted: "Silindi",
 };
 const EXPENSE_TYPES: ExpenseType[] = ["Ulaşım", "Konaklama", "Yemek", "Malzeme", "Diğer"];
 

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { NotificationBell } from "./notification-bell";
+import { AnnouncementTopbarButton } from "./announcement-topbar-button";
 import { LogOut } from "lucide-react";
 import { useLang } from "@/contexts/LanguageContext";
 import { t } from "@/lib/i18n";
@@ -17,6 +18,7 @@ const ROLE_LABELS: Record<string, string> = {
   koordinator: "Koordinatör",
   muhasebe: "Muhasebe",
   yk: "YK Başkanı",
+  admin: "Admin",
 };
 
 export function Topbar({
@@ -47,6 +49,7 @@ export function Topbar({
           </span>
         </div>
         <div className="flex items-center gap-1 lg:gap-3">
+          <AnnouncementTopbarButton />
           <NotificationBell userId={userId} userRole={userRole} />
           <Link
             href="/dashboard/profil"
@@ -58,8 +61,11 @@ export function Topbar({
             <span className="text-xs font-medium text-slate-700 truncate w-full text-right lg:text-sm">
               {userName || "Kullanıcı"}
             </span>
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 lg:text-xs">
-              {ROLE_LABELS[userRole] ?? userRole}
+            <Badge
+              variant={userRole === "admin" ? "destructive" : "secondary"}
+              className="text-[10px] px-1.5 py-0 lg:text-xs"
+            >
+              {userRole === "admin" ? "ADMİN" : (ROLE_LABELS[userRole] ?? userRole)}
             </Badge>
           </Link>
           <Button
@@ -78,8 +84,8 @@ export function Topbar({
         className="sm:hidden flex items-center justify-between px-4 pb-2 gap-2 cursor-pointer hover:underline underline-offset-2 min-w-0"
       >
         <span className="text-sm text-slate-600 truncate">{userName}</span>
-        <Badge variant="secondary" className="shrink-0">
-          {ROLE_LABELS[userRole] ?? userRole}
+        <Badge variant={userRole === "admin" ? "destructive" : "secondary"} className="shrink-0">
+          {userRole === "admin" ? "ADMİN" : (ROLE_LABELS[userRole] ?? userRole)}
         </Badge>
       </Link>
     </header>

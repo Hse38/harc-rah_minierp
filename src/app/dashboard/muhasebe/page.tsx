@@ -198,6 +198,16 @@ export default function MuhasebePage() {
     setMarkingId(expense.id);
     try {
       await supabase.from("expenses").update({ status: "paid" }).eq("id", expense.id);
+      fetch("/api/system-log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "expense_approved",
+          target_type: "expense",
+          target_id: expense.id,
+          details: { expense_number: expense.expense_number, amount: expense.amount, submitter_name: (expense as any).submitter_name, by: "muhasebe_paid" },
+        }),
+      }).catch(() => {});
       setExpenses((prev) =>
         prev.map((e) => (e.id === expense.id ? { ...e, status: "paid" as const } : e))
       );
@@ -236,6 +246,16 @@ export default function MuhasebePage() {
         const expense = expenses.find((x) => x.id === id);
         if (!expense) continue;
         await supabase.from("expenses").update({ status: "paid" }).eq("id", id);
+        fetch("/api/system-log", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "expense_approved",
+            target_type: "expense",
+            target_id: expense.id,
+            details: { expense_number: expense.expense_number, amount: expense.amount, by: "muhasebe_paid" },
+          }),
+        }).catch(() => {});
         // Personele bildirim: ödeme yapıldı
         notifyApi({
           recipientId: expense.submitter_id,

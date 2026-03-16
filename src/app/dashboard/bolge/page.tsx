@@ -191,6 +191,16 @@ export default function BolgePage() {
           reviewed_at_bolge: new Date().toISOString(),
         })
         .eq("id", expense.id);
+      fetch("/api/system-log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "expense_approved",
+          target_type: "expense",
+          target_id: expense.id,
+          details: { expense_number: expense.expense_number, amount: expense.amount, submitter_name: expense.submitter_name, by: "bolge" },
+        }),
+      }).catch(() => {});
 
       console.log("Bölge onayı yapıldı, koordinatöre push gönderiliyor (client /api/notify çağrılıyor)...");
       try {
@@ -239,6 +249,16 @@ export default function BolgePage() {
           reviewed_at_bolge: new Date().toISOString(),
         })
         .eq("id", expense.id);
+      fetch("/api/system-log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "expense_approved",
+          target_type: "expense",
+          target_id: expense.id,
+          details: { expense_number: expense.expense_number, amount: expense.amount, submitter_name: expense.submitter_name, by: "bolge", warn: true },
+        }),
+      }).catch(() => {});
 
       notifyApi({
         toRole: "koordinator",
@@ -284,6 +304,16 @@ export default function BolgePage() {
         .from("expenses")
         .update({ status: "rejected_bolge" })
         .eq("id", expenseId);
+      fetch("/api/system-log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "expense_rejected",
+          target_type: "expense",
+          target_id: expenseId,
+          details: { expense_number: expense.expense_number, amount: expense.amount, submitter_name: expense.submitter_name, by: "bolge" },
+        }),
+      }).catch(() => {});
 
       notifyApi({
         recipientId: expense.submitter_id,

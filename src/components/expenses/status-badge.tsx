@@ -16,6 +16,7 @@ const VARIANTS: Record<
   approved_koord: "success",
   rejected_koord: "destructive",
   paid: "success",
+  deleted: "destructive",
 };
 
 const STATUS_KEYS: Record<ExpenseStatus, TranslationKey> = {
@@ -26,6 +27,7 @@ const STATUS_KEYS: Record<ExpenseStatus, TranslationKey> = {
   approved_koord: "status_approved_koord",
   rejected_koord: "status_rejected_koord",
   paid: "status_paid",
+  deleted: "misc_deleted",
 };
 
 export function StatusBadge({ status }: { status: ExpenseStatus }) {

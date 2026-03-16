@@ -8,6 +8,7 @@ const DASHBOARD_PATHS = [
   "/koordinator",
   "/muhasebe",
   "/yk",
+  "/admin",
 ] as const;
 
 const ROLE_PATHS: Record<string, string[]> = {
@@ -17,12 +18,16 @@ const ROLE_PATHS: Record<string, string[]> = {
   koordinator: ["/koordinator", "/yk"],
   muhasebe: ["/muhasebe"],
   yk: ["/yk", "/koordinator"],
+  admin: ["/admin"],
 };
 
 function getRedirectForRole(role: string): string {
   const first = ROLE_PATHS[role]?.[0];
   return first ? `/dashboard${first}` : "/dashboard/deneyap";
 }
+
+const isAdminPath = (pathname: string) =>
+  pathname === "/dashboard/admin" || pathname.startsWith("/dashboard/admin/");
 
 function pathAllowedForRole(pathname: string, role: string): boolean {
   const base = pathname.replace(/^\/dashboard/, "") || "/";
@@ -35,9 +40,10 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isDashboard =
     pathname.startsWith("/dashboard") &&
-    DASHBOARD_PATHS.some((p) =>
-      pathname === `/dashboard${p}` || pathname.startsWith(`/dashboard${p}/`)
-    );
+    (pathname === "/dashboard" ||
+      DASHBOARD_PATHS.some((p) =>
+        pathname === `/dashboard${p}` || pathname.startsWith(`/dashboard${p}/`)
+      ));
   const isLogin = pathname === "/login" || pathname === "/dashboard/login";
 
   let response = NextResponse.next({ request });
@@ -85,7 +91,12 @@ export async function middleware(request: NextRequest) {
     const profileRole = (profileRes.data as { role?: string } | null)?.role;
     const effectiveRole = profileRole || role;
 
-    const allowed = pathAllowedForRole(pathname, effectiveRole);
+    const allowed =
+      isAdminPath(pathname) && effectiveRole === "admin"
+        ? true
+        : isAdminPath(pathname) && effectiveRole !== "admin"
+          ? false
+          : pathAllowedForRole(pathname, effectiveRole);
     if (!allowed) {
       const url = request.nextUrl.clone();
       url.pathname = getRedirectForRole(effectiveRole);
