@@ -74,25 +74,24 @@ export async function sendNotificationToRole(
   role: string,
   params: Omit<SendNotificationParams, "recipientId" | "recipientRole"> & { bolge?: string }
 ): Promise<void> {
-  if (role === "koordinator") {
-    console.log("Bölge onayı yapıldı, koordinatöre push gönderiliyor...");
-  }
+  console.log("[sendNotificationToRole] role:", role, "params:", params);
 
   let query = supabaseAdmin.from("profiles").select("id").eq("role", role);
   if (role === "bolge" && params.bolge) {
     query = query.eq("bolge", params.bolge);
   }
   const { data: users, error: queryError } = await query;
-
-  if (role === "koordinator") {
-    console.log("Koordinatör kullanıcılar:", users, queryError?.message ?? queryError);
-  }
+  console.log(
+    "[sendNotificationToRole] users bulundu:",
+    users,
+    "hata:",
+    queryError?.message ?? queryError
+  );
 
   const { bolge: _b, ...rest } = params;
+  console.log("[sendNotificationToRole] kullanıcı sayısı:", users?.length ?? 0);
   for (const user of users ?? []) {
-    if (role === "koordinator") {
-      console.log("Push gönderiliyor:", user.id);
-    }
+    console.log("[sendNotificationToRole] push gönderiliyor kullanıcı:", user.id);
     await sendNotification({
       ...rest,
       recipientId: user.id,
