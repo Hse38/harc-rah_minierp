@@ -44,6 +44,7 @@ import { LayoutDashboard, MapPin, List, TrendingUp, TrendingDown, ChevronDown, C
 const TUM_BOLGE_SLUGS = [...REGION_LIMIT_SLUGS];
 import { DASHBOARD_COLORS, CHART_COLORS, formatCurrencyTR } from "@/lib/dashboard-theme";
 import { EXPENSE_FIELDS_FULL } from "@/lib/expense-fields";
+import TurkiyeHaritasi from "@/components/dashboard/TurkiyeHaritasi";
 import Link from "next/link";
 
 type TimeFilter = "weekly" | "monthly" | "yearly" | "all";
@@ -591,6 +592,11 @@ export default function YkPage() {
                 </CardContent>
               </Card>
             )}
+
+            <div className="bg-white rounded-xl border border-gray-100 p-6">
+              <h2 className="text-lg font-semibold mb-4">Türkiye Harcama Haritası</h2>
+              <TurkiyeHaritasi />
+            </div>
 
             <Card className="rounded-2xl shadow-sm border-gray-200 overflow-hidden">
               <CardContent className="p-4 md:p-5">

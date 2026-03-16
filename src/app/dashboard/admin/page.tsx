@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { MetricCard } from "@/components/dashboard/metric-card";
+import TurkiyeHaritasi from "@/components/dashboard/TurkiyeHaritasi";
 import { Users, FileText, Clock, Calendar, Megaphone, Activity } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
@@ -122,6 +123,10 @@ export default function AdminDashboardPage() {
           value={stats.logsLast24h}
           borderColor="neutral"
         />
+      </div>
+      <div className="bg-white rounded-xl border border-gray-100 p-6">
+        <h2 className="text-lg font-semibold mb-4">Türkiye Harcama Haritası</h2>
+        <TurkiyeHaritasi />
       </div>
       <Card>
         <CardHeader className="pb-2">
