@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Topbar } from "@/components/layout/topbar";
 import { PushPermissionBanner } from "@/components/layout/push-permission-banner";
+import { PushNotificationSetup } from "@/components/layout/PushNotificationSetup";
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import type { Language } from "@/lib/i18n";
@@ -64,6 +65,7 @@ export default async function DashboardLayout({
             userRole={role}
             userId={user.id}
           />
+          <PushNotificationSetup userId={user.id} />
           <PushPermissionBanner userId={user.id} />
           <main className="flex-1 p-4 pb-safe md:p-6 md:px-8 max-w-6xl mx-auto w-full">
             {children}

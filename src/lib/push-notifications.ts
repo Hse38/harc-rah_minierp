@@ -9,8 +9,9 @@ export async function registerPushNotifications(userId: string): Promise<boolean
   }
 
   try {
+    console.log("Push registration başlıyor:", userId);
     const registration = await navigator.serviceWorker.register("/sw.js");
-    console.log("Service worker kayıt oldu:", registration);
+    console.log("Service worker kaydedildi:", registration);
 
     const permission = await Notification.requestPermission();
     if (permission !== "granted") {
@@ -24,6 +25,7 @@ export async function registerPushNotifications(userId: string): Promise<boolean
         process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!
       ) as BufferSource,
     });
+    console.log("Subscription oluşturuldu:", subscription);
 
     const supabase = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -39,7 +41,7 @@ export async function registerPushNotifications(userId: string): Promise<boolean
       { onConflict: "user_id" }
     );
 
-    console.log("Push subscription kaydedildi");
+    console.log("Supabase'e push subscription kaydedildi");
     return true;
   } catch (error) {
     console.error("Push notification hatası:", error);
