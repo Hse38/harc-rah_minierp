@@ -7,6 +7,7 @@ export type Announcement = { id: string; title: string; content: string; created
 
 type ContextValue = {
   announcements: Announcement[];
+  unseen: Announcement[];
   readIds: Set<string>;
   unseenCount: number;
   markSeen: (id: string) => void;
@@ -100,8 +101,10 @@ export function AnnouncementsProvider({
   const openModal = useCallback((a: Announcement) => setModalAnnouncement(a), []);
   const closeModal = useCallback(() => setModalAnnouncement(null), []);
 
+  const unseen = announcements.filter((a) => !readIds.has(a.id));
   const value: ContextValue = {
     announcements,
+    unseen,
     readIds,
     unseenCount,
     markSeen,
@@ -124,6 +127,7 @@ export function useAnnouncements(): ContextValue {
   if (!ctx)
     return {
       announcements: [],
+      unseen: [],
       readIds: new Set<string>(),
       unseenCount: 0,
       markSeen: () => {},
