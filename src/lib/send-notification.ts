@@ -5,7 +5,7 @@ const supabaseAdmin = createAdminClient();
 export interface SendNotificationParams {
   recipientId: string;
   recipientRole: string;
-  expenseId: string;
+  expenseId?: string | null;
   message: string;
   pushTitle: string;
   pushBody: string;
@@ -27,13 +27,16 @@ export async function sendNotification({
     .eq("id", recipientId)
     .single();
 
-  await supabaseAdmin.from("notifications").insert({
-    recipient_id: recipientId,
-    recipient_role: recipientRole,
-    expense_id: expenseId,
-    message,
-    is_read: false,
-  });
+  const isSystem = expenseId == null || expenseId === "system";
+  if (!isSystem) {
+    await supabaseAdmin.from("notifications").insert({
+      recipient_id: recipientId,
+      recipient_role: recipientRole,
+      expense_id: expenseId,
+      message,
+      is_read: false,
+    });
+  }
 
   const prefs = profile?.notification_prefs as { push_enabled?: boolean } | null | undefined;
   const pushEnabled = prefs?.push_enabled !== false;
@@ -72,7 +75,7 @@ export async function sendNotification({
 
 export async function sendNotificationToRole(
   role: string,
-  params: Omit<SendNotificationParams, "recipientId" | "recipientRole"> & { bolge?: string }
+  params: Omit<SendNotificationParams, "recipientId" | "recipientRole"> & { expenseId?: string | null; bolge?: string }
 ): Promise<void> {
   console.log("[sendNotificationToRole] role:", role, "params:", params);
 

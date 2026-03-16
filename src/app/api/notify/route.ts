@@ -5,7 +5,7 @@ type NotifyBody =
   | {
       recipientId: string;
       recipientRole: string;
-      expenseId: string;
+      expenseId?: string | null;
       message: string;
       pushTitle: string;
       pushBody: string;
@@ -14,7 +14,7 @@ type NotifyBody =
   | {
       toRole: string;
       bolge?: string;
-      expenseId: string;
+      expenseId?: string | null;
       message: string;
       pushTitle: string;
       pushBody: string;
