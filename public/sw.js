@@ -7,7 +7,7 @@ self.addEventListener('activate', function(event) {
 })
 
 self.addEventListener('push', function(event) {
-  console.log('Push event alındı:', event)
+  console.log('SW push event alındı!')
 
   let title = 'Bildirim'
   let body = 'Yeni bildirim'
@@ -26,6 +26,12 @@ self.addEventListener('push', function(event) {
       return self.registration.showNotification(title, {
         body,
         icon: '/icon-192.png'
+      })
+      .then(function() {
+        console.log('showNotification tamamlandı')
+      })
+      .catch(function(e) {
+        console.error('showNotification HATA:', e)
       })
     })()
   )
