@@ -26,6 +26,7 @@ export async function POST(request: Request) {
       body: string;
       url?: string;
     };
+    console.log("[send-push] incoming payload:", payload);
     const { title, body, url = "/" } = payload;
     if (!title) return NextResponse.json({ error: "title required" }, { status: 400 });
 
@@ -60,25 +61,33 @@ export async function POST(request: Request) {
       }
     }
 
-    if (userIds.length === 0) return NextResponse.json({ sent: 0 });
+    console.log("[send-push] userIds:", userIds);
+    if (userIds.length === 0) {
+      console.log("[send-push] no users to notify, exiting");
+      return NextResponse.json({ sent: 0 });
+    }
 
-    const { data: rows } = await supabase
+    const { data: rows, error: rowsError } = await supabase
       .from("push_subscriptions")
       .select("subscription")
       .in("user_id", userIds);
+
+    console.log("[send-push] subscription rows:", rows?.length ?? 0, rowsError ?? null);
 
     const pushPayload = JSON.stringify({ title, body, url, tag: "tamga-notification" });
     let sent = 0;
     for (const row of rows ?? []) {
       const sub = (row as { subscription: unknown }).subscription;
+      console.log("[send-push] sending to sub:", sub);
       if (!sub || typeof sub !== "object") continue;
       try {
         await webpush.sendNotification(sub as webpush.PushSubscription, pushPayload);
         sent++;
-      } catch {
-        // subscription expired/invalid, skip
+      } catch (err) {
+        console.error("[send-push] webpush error:", err);
       }
     }
+    console.log("[send-push] total sent:", sent);
     return NextResponse.json({ sent });
   } catch (e) {
     console.error("send-push", e);
