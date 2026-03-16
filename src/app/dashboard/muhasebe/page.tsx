@@ -15,6 +15,7 @@ import { formatCurrency, formatDate, formatDateLong } from "@/lib/utils";
 import { EXPENSE_FIELDS_FULL } from "@/lib/expense-fields";
 import { Clock, CheckCircle, Download, Eye, EyeOff, FileImage, X, Check } from "lucide-react";
 import { toast } from "sonner";
+import { notifyApi } from "@/lib/notify-api";
 import { cn } from "@/lib/utils";
 
 function maskIban(iban: string): string {
@@ -200,6 +201,16 @@ export default function MuhasebePage() {
       setExpenses((prev) =>
         prev.map((e) => (e.id === expense.id ? { ...e, status: "paid" as const } : e))
       );
+      // Personele bildirim: ödeme yapıldı
+      notifyApi({
+        recipientId: expense.submitter_id,
+        recipientRole: (expense as any).submitter_role ?? "deneyap",
+        expenseId: expense.id,
+        message: `[${expense.expense_number}] ödemeniz gerçekleşti.`,
+        pushTitle: "TAMGA - Ödeme Yapıldı 🎉",
+        pushBody: `${expense.expense_number} numaralı harcamanız ödendi`,
+        pushUrl: "/dashboard/deneyap",
+      });
       toast.success("Ödendi olarak işaretlendi.");
     } catch {
       toast.error("İşlem başarısız.");
@@ -222,7 +233,19 @@ export default function MuhasebePage() {
     setConfirmBulkExport(false);
     try {
       for (const id of toMark) {
+        const expense = expenses.find((x) => x.id === id);
+        if (!expense) continue;
         await supabase.from("expenses").update({ status: "paid" }).eq("id", id);
+        // Personele bildirim: ödeme yapıldı
+        notifyApi({
+          recipientId: expense.submitter_id,
+          recipientRole: (expense as any).submitter_role ?? "deneyap",
+          expenseId: expense.id,
+          message: `[${expense.expense_number}] ödemeniz gerçekleşti.`,
+          pushTitle: "TAMGA - Ödeme Yapıldı 🎉",
+          pushBody: `${expense.expense_number} numaralı harcamanız ödendi`,
+          pushUrl: "/dashboard/deneyap",
+        });
       }
       setExpenses((prev) =>
         prev.map((e) => (toMark.includes(e.id) ? { ...e, status: "paid" as const } : e))

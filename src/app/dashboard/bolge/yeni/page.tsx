@@ -106,6 +106,10 @@ export default function BolgeYeniPage() {
       toast.error("Tutar geçerli bir sayı olmalı.");
       return;
     }
+    if (!receiptUrl) {
+      toast.error("Fiş yüklemek zorunludur");
+      return;
+    }
     setSubmitting(true);
     const maxAttempts = 3;
     let lastError: unknown = null;
