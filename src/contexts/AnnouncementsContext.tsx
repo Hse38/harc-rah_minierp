@@ -1,16 +1,16 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createClient } from "@/lib/supabase/client";
 
-const SEEN_STORAGE_KEY = "seen_announcements";
-
-type Announcement = { id: string; title: string; content: string; created_at: string };
+export type Announcement = { id: string; title: string; content: string; created_at: string };
 
 type ContextValue = {
   announcements: Announcement[];
+  readIds: Set<string>;
   unseenCount: number;
-  unseen: Announcement[];
   markSeen: (id: string) => void;
+  markAllSeen: () => void;
   openModal: (a: Announcement) => void;
   modalAnnouncement: Announcement | null;
   closeModal: () => void;
@@ -19,59 +19,93 @@ type ContextValue = {
 
 const AnnouncementsContext = createContext<ContextValue | null>(null);
 
-function getSeenIds(): string[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(SEEN_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function addSeenId(id: string): void {
-  if (typeof window === "undefined") return;
-  try {
-    const seen = getSeenIds();
-    if (seen.includes(id)) return;
-    localStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify([...seen, id]));
-  } catch {}
-}
-
-export function AnnouncementsProvider({ children }: { children: React.ReactNode }) {
+export function AnnouncementsProvider({
+  children,
+  userId,
+}: {
+  children: React.ReactNode;
+  userId: string;
+}) {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [seenIds, setSeenIds] = useState<string[]>([]);
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [modalAnnouncement, setModalAnnouncement] = useState<Announcement | null>(null);
+  const supabase = createClient();
 
   const refetch = useCallback(async () => {
     const res = await fetch("/api/announcements");
     const data = await res.json();
     setAnnouncements(Array.isArray(data) ? data : []);
-    setSeenIds(getSeenIds());
-  }, []);
+    if (userId) {
+      const { data: reads } = await supabase
+        .from("announcement_reads")
+        .select("announcement_id")
+        .eq("user_id", userId);
+      const ids = new Set((reads ?? []).map((r: { announcement_id: string }) => r.announcement_id));
+      setReadIds(ids);
+    }
+  }, [userId, supabase]);
 
   useEffect(() => {
     refetch();
   }, [refetch]);
 
-  const markSeen = useCallback((id: string) => {
-    addSeenId(id);
-    setSeenIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
-  }, []);
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel("announcements-realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "announcements" },
+        () => {
+          refetch();
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, refetch, supabase]);
 
-  const unseen = announcements.filter((a) => !seenIds.includes(a.id));
-  const unseenCount = unseen.length;
+  const markSeen = useCallback(
+    async (id: string) => {
+      if (!userId) return;
+      setReadIds((prev) => new Set(prev).add(id));
+      await supabase.from("announcement_reads").upsert(
+        { user_id: userId, announcement_id: id, read_at: new Date().toISOString() },
+        { onConflict: "user_id,announcement_id" }
+      );
+    },
+    [userId, supabase]
+  );
+
+  const markAllSeen = useCallback(async () => {
+    if (!userId) return;
+    const unread = announcements.filter((a) => !readIds.has(a.id));
+    if (unread.length === 0) return;
+    const newReads = new Set(readIds);
+    unread.forEach((a) => newReads.add(a.id));
+    setReadIds(newReads);
+    await Promise.all(
+      unread.map((a) =>
+        supabase.from("announcement_reads").upsert(
+          { user_id: userId, announcement_id: a.id, read_at: new Date().toISOString() },
+          { onConflict: "user_id,announcement_id" }
+        )
+      )
+    );
+  }, [userId, announcements, readIds, supabase]);
+
+  const unseenCount = announcements.filter((a) => !readIds.has(a.id)).length;
 
   const openModal = useCallback((a: Announcement) => setModalAnnouncement(a), []);
   const closeModal = useCallback(() => setModalAnnouncement(null), []);
 
   const value: ContextValue = {
     announcements,
+    readIds,
     unseenCount,
-    unseen,
     markSeen,
+    markAllSeen,
     openModal,
     modalAnnouncement,
     closeModal,
@@ -90,9 +124,10 @@ export function useAnnouncements(): ContextValue {
   if (!ctx)
     return {
       announcements: [],
+      readIds: new Set<string>(),
       unseenCount: 0,
-      unseen: [],
       markSeen: () => {},
+      markAllSeen: () => {},
       openModal: () => {},
       modalAnnouncement: null,
       closeModal: () => {},

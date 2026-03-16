@@ -25,6 +25,16 @@ export const formatDateLong = (dateStr: string) =>
     year: "numeric",
   }).format(new Date(dateStr));
 
+/** Göreceli tarih: "2 saat önce", "3 gün önce" */
+export function formatRelativeDate(dateStr: string): string {
+  const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
+  if (diff < 60) return "Az önce";
+  if (diff < 3600) return `${Math.floor(diff / 60)} dakika önce`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} saat önce`;
+  if (diff < 604800) return `${Math.floor(diff / 86400)} gün önce`;
+  return formatDate(dateStr);
+}
+
 /** Bölge slug → Türkçe görüntü adı (tüm sayfalarda kullan) */
 export function bolgeAdi(bolge: string | null | undefined): string {
   if (!bolge) return "";

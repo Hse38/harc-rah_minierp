@@ -22,10 +22,11 @@ export async function GET(request: Request) {
     .eq("is_active", true)
     .order("created_at", { ascending: false });
   if (error) return NextResponse.json([], { status: 200 });
-  const list = (rows ?? []).filter((r: { target_roles?: string[]; target_bolge?: string | null }) => {
+  const list = (rows ?? []).filter((r: { target_roles?: string[] | null; target_bolge?: string | null }) => {
     const targetRoles = r.target_roles ?? [];
     const targetBolge = r.target_bolge;
-    if (targetRoles.includes("all")) {
+    const noRoleFilter = targetRoles.length === 0;
+    if (noRoleFilter || targetRoles.includes("all")) {
       if (!targetBolge) return true;
       return targetBolge === bolge;
     }
