@@ -1,6 +1,6 @@
 "use client";
 
-/** Client helper: POST /api/notify (single recipient or toRole). Fire-and-forget. */
+/** Client helper: POST /api/notify (single recipient or toRole). Returns fetch Response for debugging. */
 export async function notifyApi(
   body:
     | {
@@ -21,14 +21,23 @@ export async function notifyApi(
         pushBody: string;
         pushUrl: string;
       }
-): Promise<void> {
+): Promise<Response | null> {
   try {
-    await fetch("/api/notify", {
+    const res = await fetch("/api/notify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
+    let json: unknown = null;
+    try {
+      json = await res.json();
+    } catch {
+      // body yoksa yut
+    }
+    console.log("[notifyApi] status:", res.status, json);
+    return res;
   } catch (e) {
-    console.error("notifyApi", e);
+    console.error("notifyApi fetch error:", e);
+    return null;
   }
 }

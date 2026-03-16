@@ -193,14 +193,19 @@ export default function BolgePage() {
         .eq("id", expense.id);
 
       console.log("Bölge onayı yapıldı, koordinatöre push gönderiliyor (client /api/notify çağrılıyor)...");
-      notifyApi({
-        toRole: "koordinator",
-        expenseId: expense.id,
-        message: `[${expense.expense_number}] bölge onaylandı, koordinatör onayı bekleniyor.`,
-        pushTitle: "TAMGA - Onay Bekleniyor",
-        pushBody: `${expense.expense_number} bölge onaylandı, koordinatör onayı bekleniyor`,
-        pushUrl: "/dashboard/koordinator",
-      });
+      try {
+        const res = await notifyApi({
+          toRole: "koordinator",
+          expenseId: expense.id,
+          message: `[${expense.expense_number}] bölge onaylandı, koordinatör onayı bekleniyor.`,
+          pushTitle: "TAMGA - Onay Bekleniyor",
+          pushBody: `${expense.expense_number} bölge onaylandı, koordinatör onayı bekleniyor`,
+          pushUrl: "/dashboard/koordinator",
+        });
+        console.log("notifyApi response (handleApprove):", res);
+      } catch (e) {
+        console.error("notifyApi HATA (handleApprove):", e);
+      }
 
       setAllExpenses((prev) =>
         prev.map((e) =>
