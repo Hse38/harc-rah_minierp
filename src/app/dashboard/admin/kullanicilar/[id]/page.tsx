@@ -356,7 +356,7 @@ export default function AdminKullanicilarIdPage() {
                   <Select
                     value={form.role}
                     onValueChange={(v) =>
-                      setForm((f) => ({ ...f, role: v, il: \"\", bolge: \"\" }))
+                      setForm((f) => ({ ...f, role: v, il: "", bolge: "" }))
                     }
                   >
                     <SelectTrigger className="focus:ring-[#1E2761]/30">
@@ -374,7 +374,7 @@ export default function AdminKullanicilarIdPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className={cn(\"space-y-2\", !needsIl(form.role) && \"opacity-50\")}>
+                  <div className={cn("space-y-2", !needsIl(form.role) && "opacity-50")}>
                     <Label>İl</Label>
                     <Select
                       value={form.il}
