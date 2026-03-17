@@ -393,7 +393,7 @@ export default function AdminKullanicilarIdPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className={cn(\"space-y-2\", !needsBolge(form.role) && \"opacity-50\")}>
+                  <div className={cn("space-y-2", !needsBolge(form.role) && "opacity-50")}>
                     <Label>Bölge</Label>
                     <Select
                       value={form.bolge}
