@@ -20,7 +20,11 @@ export async function GET(
   }
   const { data: authUser } = await admin.auth.admin.getUserById(id);
   const email = (authUser?.user?.email as string) ?? "";
-  return NextResponse.json({ ...profile, email });
+  const bannedUntil = (authUser?.user as { banned_until?: string | null } | undefined)
+    ?.banned_until;
+  const is_suspended =
+    !!bannedUntil && new Date(bannedUntil).getTime() > Date.now();
+  return NextResponse.json({ ...profile, email, is_suspended });
 }
 
 export async function PATCH(

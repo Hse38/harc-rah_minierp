@@ -107,6 +107,18 @@ const IL_BOLGE_MAP: Record<string, string> = {
   Çorum: "karadeniz",
 };
 
+/** Haritadaki 81 il – SVG path name (tıklanınca gelen). Bölge sorumlusu ve il verisi hep bu anahtarlarla. */
+const CANONICAL_IL_KEYS: string[] = [
+  "Adana", "Adiyaman", "Afyonkarahisar", "Agri", "Aksaray", "Amasya", "Ankara", "Antalya", "Ardahan", "Artvin",
+  "Aydin", "Balikesir", "Bartın", "Batman", "Bayburt", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur", "Bursa",
+  "Çanakkale", "Çankırı", "Çorum", "Denizli", "Diyarbakir", "Düzce", "Edirne", "Elazig", "Erzincan", "Erzurum",
+  "Eskisehir", "Gaziantep", "Giresun", "Gümüşhane", "Hakkari", "Hatay", "Iğdir", "Isparta", "Istanbul", "Izmir",
+  "K. Maras", "Karabük", "Karaman", "Kars", "Kastamonu", "Kayseri", "Kilis", "Kinkkale", "Kirklareli", "Kirsehir",
+  "Kocaeli", "Konya", "Kütahya", "Malatya", "Manisa", "Mardin", "Mersin", "Mugla", "Mus", "Nevsehir", "Nigde",
+  "Ordu", "Osmaniye", "Rize", "Sakarya", "Samsun", "Sanliurfa", "Siirt", "Sinop", "Sirnak", "Sivas", "Tekirdag",
+  "Tokat", "Trabzon", "Tunceli", "Usak", "Van", "Yalova", "Yozgat", "Zinguldak",
+];
+
 const BOLGE_RENKLER: Record<string, string> = {
   marmara: "#B5D4F4",
   ege: "#9FE1CB",
@@ -158,10 +170,38 @@ const EXPENSE_IL_TO_SVG: Record<string, string> = {
   Aydın: "Aydin",
 };
 
+/** expense.il (DB) veya profile.il → harita anahtarı (SVG path name). Büyük/küçük harf duyarsız. */
 function ilToKey(il: string | null): string {
   if (!il) return "";
   const t = il.trim();
-  return EXPENSE_IL_TO_SVG[t] ?? t;
+  if (!t) return "";
+  const fromMap = EXPENSE_IL_TO_SVG[t];
+  if (fromMap) return fromMap;
+  const lower = t.toLocaleLowerCase("tr-TR");
+  for (const c of CANONICAL_IL_KEYS) {
+    if (c.toLocaleLowerCase("tr-TR") === lower) return c;
+  }
+  return t;
+}
+
+/** İl eşleştirmesi: büyük/küçük harf duyarsız (profiles.il vs harita il adı). */
+function ilMatches(a: string | null | undefined, b: string | null | undefined): boolean {
+  if (a == null || b == null) return false;
+  return a.trim().toLocaleLowerCase("tr-TR") === b.trim().toLocaleLowerCase("tr-TR");
+}
+
+/** Seçilen il adına karşılık gelen IL_BOLGE_MAP anahtarını bulur (case-insensitive). */
+function getBolgeForIl(ilName: string | null): string | null {
+  if (!ilName) return null;
+  const key = Object.keys(IL_BOLGE_MAP).find((k) => ilMatches(k, ilName));
+  return key ? IL_BOLGE_MAP[key] : null;
+}
+
+/** Seçilen il için ilData anahtarını bulur (case-insensitive). */
+function getIlDataKey(selectedIl: string | null): string | null {
+  if (!selectedIl) return null;
+  const found = CANONICAL_IL_KEYS.find((k) => ilMatches(k, selectedIl));
+  return found ?? null;
 }
 
 interface IlData {
@@ -171,6 +211,9 @@ interface IlData {
   bolge_sorumlusu: string;
   persons: { name: string; amount: number; status: string }[];
 }
+
+type ProfileRow = { id: string; full_name: string | null; il: string | null; role: string | null; bolge: string | null };
+type ExpenseRow = { il?: string; amount?: number; status?: string; submitter_id?: string };
 
 export default function TurkiyeHaritasi() {
   const [svgContent, setSvgContent] = useState("");
@@ -206,34 +249,36 @@ export default function TurkiyeHaritasi() {
   useEffect(() => {
     let cancelled = false;
     const fetchData = async () => {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, il, role, bolge");
       const { data: expenses } = await supabase
         .from("expenses")
-        .select("il, amount, status, submitter_name, submitter_id, bolge");
+        .select("il, amount, status, submitter_id");
       if (cancelled) return;
-      if (!expenses) return;
+      const profileList = (profiles ?? []) as ProfileRow[];
+      const expenseList = (expenses ?? []) as ExpenseRow[];
+      const profileById = new Map(profileList.map((p) => [p.id, p]));
+
       const grouped: Record<string, IlData> = {};
-      expenses.forEach((e: { il?: string; amount?: number; status?: string; submitter_name?: string; bolge?: string }) => {
-        const key = ilToKey(e.il ?? null);
-        if (!key) return;
-        if (!grouped[key]) {
-          grouped[key] = { total: 0, count: 0, pending: 0, bolge_sorumlusu: "", persons: [] };
-        }
+      CANONICAL_IL_KEYS.forEach((il) => {
+        grouped[il] = { total: 0, count: 0, pending: 0, bolge_sorumlusu: "", persons: [] };
+      });
+
+      // 4. Harcama verileri: submitter'ın il'i (profiles.il) üzerinden – JOIN mantığı
+      expenseList.forEach((e) => {
+        const profile = e.submitter_id ? profileById.get(e.submitter_id) : null;
+        const submitterIl = profile?.il ?? null;
+        const key = ilToKey(submitterIl);
+        if (!key || !grouped[key]) return;
         grouped[key].total += Number(e.amount) || 0;
         grouped[key].count++;
         if (e.status === "pending_bolge" || e.status === "pending_koord") {
           grouped[key].pending++;
         }
-        const existing = grouped[key].persons.find((p) => p.name === e.submitter_name);
-        if (existing) {
-          existing.amount += Number(e.amount) || 0;
-        } else {
-          grouped[key].persons.push({
-            name: e.submitter_name || "Bilinmiyor",
-            amount: Number(e.amount) || 0,
-            status: e.status || "",
-          });
-        }
       });
+
+      // 2. Bölge sorumlusu: il değil bolge üzerinden – her bölge için role=bolge olan profil
       const bolgeSet = new Set<string>(Object.values(IL_BOLGE_MAP));
       for (const bolge of bolgeSet) {
         const { data: bs } = await supabase
@@ -253,6 +298,29 @@ export default function TurkiyeHaritasi() {
           });
         }
       }
+
+      // 3. Personel listesi: profiles'dan il eşleşenleri (case-insensitive), sonra harcama toplamları
+      CANONICAL_IL_KEYS.forEach((ilKey) => {
+        const personsInIl = profileList.filter((p) => ilMatches(p.il, ilKey));
+        const personRows = personsInIl.map((p) => {
+          let amount = 0;
+          let status = "";
+          expenseList.forEach((e) => {
+            if (e.submitter_id !== p.id) return;
+            const subIl = profileById.get(e.submitter_id)?.il;
+            if (!ilMatches(subIl, ilKey)) return;
+            amount += Number(e.amount) || 0;
+            if (e.status) status = e.status;
+          });
+          return {
+            name: p.full_name || "İsimsiz",
+            amount,
+            status,
+          };
+        });
+        grouped[ilKey].persons = personRows;
+      });
+
       setIlData(grouped);
     };
     fetchData();
@@ -280,7 +348,9 @@ export default function TurkiyeHaritasi() {
     }
   };
 
-  const selectedBolge = selectedIl ? IL_BOLGE_MAP[selectedIl] : null;
+  const selectedBolge = selectedIl ? getBolgeForIl(selectedIl) : null;
+  const ilDataKey = getIlDataKey(selectedIl);
+  const dataForSelected = ilDataKey ? ilData[ilDataKey] : null;
 
   const statusLabel: Record<string, string> = {
     pending_bolge: "Bekliyor",
@@ -297,8 +367,6 @@ export default function TurkiyeHaritasi() {
     Reddedildi: "bg-red-100 text-red-800",
     Ödendi: "bg-blue-100 text-blue-800",
   };
-
-  const dataForSelected = selectedIl ? ilData[selectedIl] : null;
 
   return (
     <div className="space-y-4">
