@@ -472,7 +472,7 @@ export default function AdminKullanicilarIdPage() {
                 <Label>Yeni şifre (min 8 karakter)</Label>
                 <div className="relative">
                   <Input
-                    type={showPassword ? \"text\" : \"password\"}
+                    type={showPassword ? "text" : "password"}
                     value={resetPassword}
                     onChange={(e) => setResetPassword(e.target.value)}
                     placeholder="••••••••"
@@ -483,7 +483,7 @@ export default function AdminKullanicilarIdPage() {
                     type="button"
                     onClick={() => setShowPassword((s) => !s)}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800"
-                    aria-label={showPassword ? \"Gizle\" : \"Göster\"}
+                    aria-label={showPassword ? "Gizle" : "Göster"}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -493,12 +493,12 @@ export default function AdminKullanicilarIdPage() {
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-xs text-slate-500">
                   <span>Güç</span>
-                  <span className={cn(\"font-medium\", strength.label === \"Zayıf\" ? \"text-red-600\" : strength.label === \"Orta\" ? \"text-amber-600\" : \"text-emerald-700\")}>
+                  <span className={cn("font-medium", strength.label === "Zayıf" ? "text-red-600" : strength.label === "Orta" ? "text-amber-600" : "text-emerald-700")}>
                     {strength.label}
                   </span>
                 </div>
                 <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
-                  <div className={cn(\"h-full\", strength.color)} style={{ width: `${strength.pct}%` }} />
+                  <div className={cn("h-full", strength.color)} style={{ width: `${strength.pct}%` }} />
                 </div>
               </div>
 
@@ -524,7 +524,7 @@ export default function AdminKullanicilarIdPage() {
               <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                 <span className="text-sm text-slate-700">Mevcut durum</span>
                 <span className="inline-flex items-center gap-2 text-sm">
-                  <span className={cn(\"h-2.5 w-2.5 rounded-full\", isSuspended ? \"bg-red-500\" : \"bg-emerald-500\")} />
+                  <span className={cn("h-2.5 w-2.5 rounded-full", isSuspended ? "bg-red-500" : "bg-emerald-500")} />
                   <span className="font-medium text-slate-900">{isSuspended ? "Askıda" : "Aktif"}</span>
                 </span>
               </div>
