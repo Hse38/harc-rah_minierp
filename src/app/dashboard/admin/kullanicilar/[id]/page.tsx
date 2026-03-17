@@ -305,12 +305,12 @@ export default function AdminKullanicilarIdPage() {
             <CardContent className="pt-4">
               <div className="flex items-start gap-4">
                 <div className="w-16 h-16 rounded-full bg-[#1E2761] text-white flex items-center justify-center text-xl font-bold shrink-0">
-                  {getInitials(form.full_name || profile.full_name || \"Kullanıcı\")}
+                  {getInitials(form.full_name || profile.full_name || "Kullanıcı")}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <h1 className="text-xl font-bold text-slate-900 truncate">
-                      {form.full_name || profile.full_name || \"Kullanıcı\"}
+                      {form.full_name || profile.full_name || "Kullanıcı"}
                     </h1>
                     <Badge variant={roleMeta.badgeVariant}>
                       <span className="mr-1">{roleMeta.emoji}</span>
@@ -319,11 +319,11 @@ export default function AdminKullanicilarIdPage() {
                     <span className="inline-flex items-center gap-2 text-xs text-slate-600">
                       <span
                         className={cn(
-                          \"h-2.5 w-2.5 rounded-full\",
-                          isSuspended ? \"bg-red-500\" : \"bg-emerald-500\"
+                          "h-2.5 w-2.5 rounded-full",
+                          isSuspended ? "bg-red-500" : "bg-emerald-500"
                         )}
                       />
-                      {isSuspended ? \"Askıda\" : \"Aktif\"}
+                      {isSuspended ? "Askıda" : "Aktif"}
                     </span>
                   </div>
                   <p className="text-sm text-slate-500 truncate">{profile.email}</p>
