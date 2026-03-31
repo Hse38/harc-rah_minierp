@@ -25,6 +25,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { notifyApi } from "@/lib/notify-api";
 import { PROFILE_FIELDS_FORM } from "@/lib/expense-fields";
 import { formatCurrency } from "@/lib/utils";
+import { getUserFriendlyErrorMessage, getUserFriendlyApiErrorMessage } from "@/lib/errorMessages";
 import {
   KategoriEkAlanlari,
   type KategoriDetay,
@@ -188,21 +189,21 @@ export default function DeneyapYeniPage() {
     const kdErr: KategoriDetayErrors = {};
     if (form.expense_type === "Yakıt") {
       const km = (kategoriDetay as { km?: unknown }).km;
-      if (km === "" || km == null || Number(km) <= 0) kdErr.km = "Bu alan zorunludur";
+      if (km === "" || km == null || Number(km) <= 0) kdErr.km = "Lütfen KM bilgisini giriniz";
     } else if (form.expense_type === "Yemek") {
       const v = (kategoriDetay as { kisi_sayisi?: unknown }).kisi_sayisi;
-      if (v === "" || v == null || Number(v) <= 0) kdErr.kisi_sayisi = "Bu alan zorunludur";
+      if (v === "" || v == null || Number(v) <= 0) kdErr.kisi_sayisi = "Lütfen kişi sayısını giriniz";
     } else if (form.expense_type === "Konaklama") {
       const v = (kategoriDetay as { gece_sayisi?: unknown }).gece_sayisi;
-      if (v === "" || v == null || Number(v) <= 0) kdErr.gece_sayisi = "Bu alan zorunludur";
+      if (v === "" || v == null || Number(v) <= 0) kdErr.gece_sayisi = "Lütfen gece sayısını giriniz";
     } else if (form.expense_type === "Ulaşım") {
       const tip = (kategoriDetay as { tip?: unknown }).tip;
       const deger = (kategoriDetay as { deger?: unknown }).deger;
-      if (!tip) kdErr.tip = "Bu alan zorunludur";
-      if (deger === "" || deger == null || Number(deger) <= 0) kdErr.deger = "Bu alan zorunludur";
+      if (!tip) kdErr.tip = "Lütfen ulaşım tipini seçiniz";
+      if (deger === "" || deger == null || Number(deger) <= 0) kdErr.deger = "Lütfen değer bilgisini giriniz";
     } else if (form.expense_type === "Diğer") {
       const a = String((kategoriDetay as { aciklama?: unknown }).aciklama ?? "").trim();
-      if (!a) kdErr.aciklama = "Bu alan zorunludur";
+      if (!a) kdErr.aciklama = "Lütfen ne için harcandığını açıklayınız";
     }
     setKategoriDetayErrors(kdErr);
     if (Object.keys(kdErr).length) {
@@ -235,8 +236,7 @@ export default function DeneyapYeniPage() {
         | { error?: string };
 
       if (!res.ok) {
-        const msg = (payload as { error?: string } | null)?.error;
-        toast.error(msg || "Kayıt oluşturulamadı.");
+        toast.error(getUserFriendlyApiErrorMessage(payload, "Kayıt oluşturulamadı."));
         return;
       }
 
@@ -261,11 +261,7 @@ export default function DeneyapYeniPage() {
       window.location.href = "/dashboard/deneyap";
       return;
     } catch (err: unknown) {
-      toast.error(
-        err && typeof err === "object" && "message" in err
-          ? String((err as { message: string }).message)
-          : "Kayıt oluşturulamadı."
-      );
+      toast.error(getUserFriendlyErrorMessage(err));
     } finally {
       setSubmitting(false);
     }

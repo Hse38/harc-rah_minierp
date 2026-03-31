@@ -79,13 +79,15 @@ export function KategoriEkAlanlari({
 
       {category === "Yakıt" && (
         <div className="space-y-1.5">
-          <Label htmlFor="kd_km">Kaç KM?</Label>
+          <Label htmlFor="kd_km">Kaç KM yol gittiniz?</Label>
           <Input
             id="kd_km"
             type="number"
+            min={1}
             inputMode="numeric"
             value={String((value as { km?: number | "" }).km ?? "")}
             onChange={(e) => onChange({ km: e.target.value === "" ? "" : Number(e.target.value) })}
+            placeholder="Örn: 150"
             disabled={disabled}
           />
           {errors?.km && <p className="text-xs text-red-600">{errors.km}</p>}
@@ -95,15 +97,17 @@ export function KategoriEkAlanlari({
 
       {category === "Yemek" && (
         <div className="space-y-1.5">
-          <Label htmlFor="kd_kisi">Kaç kişi yendi?</Label>
+          <Label htmlFor="kd_kisi">Kaç kişi yedi?</Label>
           <Input
             id="kd_kisi"
             type="number"
+            min={1}
             inputMode="numeric"
             value={String((value as { kisi_sayisi?: number | "" }).kisi_sayisi ?? "")}
             onChange={(e) =>
               onChange({ kisi_sayisi: e.target.value === "" ? "" : Number(e.target.value) })
             }
+            placeholder="Örn: 5"
             disabled={disabled}
           />
           {errors?.kisi_sayisi && <p className="text-xs text-red-600">{errors.kisi_sayisi}</p>}
@@ -113,15 +117,17 @@ export function KategoriEkAlanlari({
 
       {category === "Konaklama" && (
         <div className="space-y-1.5">
-          <Label htmlFor="kd_gece">Kaç gece?</Label>
+          <Label htmlFor="kd_gece">Kaç gece kaldınız?</Label>
           <Input
             id="kd_gece"
             type="number"
+            min={1}
             inputMode="numeric"
             value={String((value as { gece_sayisi?: number | "" }).gece_sayisi ?? "")}
             onChange={(e) =>
               onChange({ gece_sayisi: e.target.value === "" ? "" : Number(e.target.value) })
             }
+            placeholder="Örn: 2"
             disabled={disabled}
           />
           {errors?.gece_sayisi && <p className="text-xs text-red-600">{errors.gece_sayisi}</p>}
@@ -132,7 +138,7 @@ export function KategoriEkAlanlari({
       {category === "Ulaşım" && (
         <div className="space-y-2">
           <div className="space-y-1.5">
-            <Label>KM mi / Bilet adedi mi?</Label>
+            <Label>Ulaşım tipi</Label>
             <div className="flex items-center gap-3">
               <label className="flex items-center gap-2 text-sm text-slate-700">
                 <input
@@ -161,15 +167,17 @@ export function KategoriEkAlanlari({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="kd_deger">Sayı</Label>
+            <Label htmlFor="kd_deger">Kaç KM / kaç bilet?</Label>
             <Input
               id="kd_deger"
               type="number"
+              min={1}
               inputMode="numeric"
               value={String((value as { deger?: number | "" }).deger ?? "")}
               onChange={(e) =>
                 onChange({ ...(value as object), deger: e.target.value === "" ? "" : Number(e.target.value) } as KategoriDetay)
               }
+              placeholder="Örn: 3"
               disabled={disabled}
             />
             {errors?.deger && <p className="text-xs text-red-600">{errors.deger}</p>}
@@ -180,12 +188,13 @@ export function KategoriEkAlanlari({
 
       {category === "Diğer" && (
         <div className="space-y-1.5">
-          <Label htmlFor="kd_aciklama">Açıklama notu (Ne için?)</Label>
+          <Label htmlFor="kd_aciklama">Ne için harcandı?</Label>
           <Textarea
             id="kd_aciklama"
             value={String((value as { aciklama?: string }).aciklama ?? "")}
             onChange={(e) => onChange({ aciklama: e.target.value })}
             rows={2}
+            placeholder="Açıklayınız..."
             disabled={disabled}
           />
           {errors?.aciklama && <p className="text-xs text-red-600">{errors.aciklama}</p>}

@@ -6,6 +6,7 @@ import { MetricCard } from "@/components/dashboard/metric-card";
 import TurkiyeHaritasi from "@/components/dashboard/TurkiyeHaritasi";
 import { Users, FileText, Clock, Calendar, Megaphone, Activity } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { getUserFriendlyApiErrorMessage, getUserFriendlyErrorMessage } from "@/lib/errorMessages";
 
 type Stats = {
   totalUsers: number;
@@ -52,13 +53,13 @@ export default function AdminDashboardPage() {
         const res = await fetch("/api/admin/stats");
         if (!res.ok) {
           const j = await res.json().catch(() => ({}));
-          setError(j.error || "Veri yüklenemedi");
+          setError(getUserFriendlyApiErrorMessage(j, "Veri yüklenemedi"));
           return;
         }
         const data = await res.json();
         if (!cancelled) setStats(data);
       } catch (e) {
-        if (!cancelled) setError("Bağlantı hatası");
+        if (!cancelled) setError(getUserFriendlyErrorMessage(e));
       } finally {
         if (!cancelled) setLoading(false);
       }
