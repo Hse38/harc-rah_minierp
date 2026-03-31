@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getNextExpenseNumber } from "@/lib/expense-number";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 type CreateExpenseBody = {
   iban?: string;
@@ -18,6 +19,7 @@ type CreateExpenseBody = {
 
 export async function POST(request: Request) {
   const supabase = await createClient();
+  const supabaseAdmin = createAdminClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -46,7 +48,8 @@ export async function POST(request: Request) {
 
   const fis_hash = body.fis_hash ? String(body.fis_hash).trim() : null;
   if (fis_hash) {
-    const { data: dup } = await supabase
+    // IMPORTANT: global duplicate detection must bypass RLS
+    const { data: dup } = await supabaseAdmin
       .from("expenses")
       .select("expense_number,status")
       .eq("fis_hash", fis_hash)
@@ -68,7 +71,8 @@ export async function POST(request: Request) {
   }
 
   const expense_number = await getNextExpenseNumber(async () => {
-    const { data: lastRow } = await supabase
+    // IMPORTANT: expense_number generation must bypass RLS, otherwise users may always get HRC-1001
+    const { data: lastRow } = await supabaseAdmin
       .from("expenses")
       .select("expense_number")
       .order("created_at", { ascending: false })
@@ -99,12 +103,20 @@ export async function POST(request: Request) {
     kategori_detay: body.kategori_detay ?? null,
   };
 
-  const { error: insErr } = await supabase.from("expenses").insert(insertPayload);
+  const { error: insErr } = await supabaseAdmin.from("expenses").insert(insertPayload);
   if (insErr) {
-    return NextResponse.json({ error: insErr.message }, { status: 400 });
+    // Preserve useful fields for debugging + client-side mapping
+    return NextResponse.json(
+      {
+        error: insErr.message,
+        code: (insErr as { code?: string }).code,
+        details: (insErr as { details?: string }).details,
+      },
+      { status: 400 }
+    );
   }
 
-  const { data: inserted } = await supabase
+  const { data: inserted } = await supabaseAdmin
     .from("expenses")
     .select("id, expense_number")
     .eq("expense_number", expense_number)

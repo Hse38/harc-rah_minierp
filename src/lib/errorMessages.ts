@@ -53,7 +53,8 @@ export function getUserFriendlyErrorMessage(err: AnyError): string {
   }
 
   // Duplicate / unique
-  if (code === "23505" || lower.includes("duplicate key") || lower.includes("already exists")) {
+  // Keep this narrow to avoid false “duplicate” user messages.
+  if (code === "23505" || lower.includes("duplicate key") || lower.includes("unique constraint")) {
     return "Bu kayıt zaten mevcut.";
   }
 
