@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 /** SVG path name (from turkey.svg) -> bölge slug */
@@ -204,6 +204,12 @@ function getIlDataKey(selectedIl: string | null): string | null {
   return found ?? null;
 }
 
+/** Canonical il key -> bölge slug (case-insensitive IL_BOLGE_MAP lookup) */
+function getBolgeForIlKey(ilKey: string): string | null {
+  const mapKey = Object.keys(IL_BOLGE_MAP).find((k) => ilMatches(k, ilKey));
+  return mapKey ? IL_BOLGE_MAP[mapKey] : null;
+}
+
 interface IlData {
   total: number;
   count: number;
@@ -218,6 +224,7 @@ type ExpenseRow = { il?: string; amount?: number; status?: string; submitter_id?
 export default function TurkiyeHaritasi() {
   const [svgContent, setSvgContent] = useState("");
   const [selectedIl, setSelectedIl] = useState<string | null>(null);
+  const [selectedBolgeKey, setSelectedBolgeKey] = useState<string | null>(null);
   const [ilData, setIlData] = useState<Record<string, IlData>>({});
   const supabase = createClient();
 
@@ -333,6 +340,7 @@ export default function TurkiyeHaritasi() {
     const target = e.target as SVGPathElement;
     const il = target.getAttribute("data-il");
     if (il) {
+      setSelectedBolgeKey(null);
       setSelectedIl(il);
       const svgEl = e.currentTarget.querySelector("svg");
       if (svgEl) {
@@ -351,6 +359,25 @@ export default function TurkiyeHaritasi() {
   const selectedBolge = selectedIl ? getBolgeForIl(selectedIl) : null;
   const ilDataKey = getIlDataKey(selectedIl);
   const dataForSelected = ilDataKey ? ilData[ilDataKey] : null;
+
+  const regionAggregate = useMemo(() => {
+    if (!selectedBolgeKey) return null;
+    const keysInRegion = CANONICAL_IL_KEYS.filter((k) => getBolgeForIlKey(k) === selectedBolgeKey);
+    let total = 0;
+    let count = 0;
+    let pending = 0;
+    let bolge_sorumlusu = "";
+    keysInRegion.forEach((k) => {
+      const d = ilData[k];
+      if (!d) return;
+      total += Number(d.total) || 0;
+      count += Number(d.count) || 0;
+      pending += Number(d.pending) || 0;
+      if (!bolge_sorumlusu && d.bolge_sorumlusu) bolge_sorumlusu = d.bolge_sorumlusu;
+    });
+    const name = BOLGE_ADLARI[selectedBolgeKey]?.replace(" Bölgesi", "") ?? selectedBolgeKey;
+    return { name, total, count, pending, bolge_sorumlusu: bolge_sorumlusu || "Atanmamış" };
+  }, [ilData, selectedBolgeKey]);
 
   const statusLabel: Record<string, string> = {
     pending_bolge: "Bekliyor",
@@ -372,7 +399,27 @@ export default function TurkiyeHaritasi() {
     <div className="space-y-4">
       <div className="flex flex-wrap gap-3">
         {Object.entries(BOLGE_ADLARI).map(([key, ad]) => (
-          <div key={key} className="flex items-center gap-1.5 text-xs text-gray-500">
+          <div
+            key={key}
+            role="button"
+            tabIndex={0}
+            onClick={() => {
+              setSelectedIl(null);
+              setSelectedBolgeKey(key);
+            }}
+            onKeyDown={(ev) => {
+              if (ev.key === "Enter" || ev.key === " ") {
+                ev.preventDefault();
+                setSelectedIl(null);
+                setSelectedBolgeKey(key);
+              }
+            }}
+            className={`flex items-center gap-1.5 text-xs rounded-md px-2 py-1 select-none cursor-pointer transition-colors ${
+              selectedBolgeKey === key
+                ? "bg-gray-100 text-gray-900"
+                : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+            }`}
+          >
             <div className="w-3 h-3 rounded-sm shrink-0" style={{ background: BOLGE_RENKLER[key] }} />
             <span>{ad.replace(" Bölgesi", "")}</span>
           </div>
@@ -386,11 +433,11 @@ export default function TurkiyeHaritasi() {
           style={{ minHeight: 300 }}
         />
         <div className="lg:w-80 shrink-0">
-          {!selectedIl ? (
+          {!selectedIl && !selectedBolgeKey ? (
             <div className="bg-gray-50 rounded-xl p-6 text-center text-sm text-gray-400 border border-gray-100">
               İl seçmek için haritaya tıklayın
             </div>
-          ) : (
+          ) : selectedIl ? (
             <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-4">
               <div className="flex justify-between items-start">
                 <div>
@@ -476,6 +523,62 @@ export default function TurkiyeHaritasi() {
               ) : (
                 <p className="text-xs text-gray-400 text-center py-2">Bu il için henüz harcama yok</p>
               )}
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">{regionAggregate?.name ?? "—"}</h3>
+                  <p className="text-xs text-gray-400">Bölge Özeti</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedBolgeKey(null)}
+                  className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="text-xs text-gray-400">Toplam</p>
+                  <p className="text-base font-semibold text-gray-900">
+                    {regionAggregate ? `₺${regionAggregate.total.toLocaleString("tr-TR")}` : "—"}
+                  </p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="text-xs text-gray-400">Harcama</p>
+                  <p className="text-base font-semibold text-gray-900">
+                    {regionAggregate ? regionAggregate.count : "0"}
+                  </p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="text-xs text-gray-400">Bekleyen</p>
+                  <p className="text-base font-semibold text-amber-600">
+                    {regionAggregate ? regionAggregate.pending : "0"}
+                  </p>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-400 mb-2">Bölge Sorumlusu</p>
+                <div className="flex items-center gap-2 bg-blue-50 rounded-lg p-2.5">
+                  <div className="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center text-xs font-semibold text-blue-800 shrink-0">
+                    {regionAggregate?.bolge_sorumlusu
+                      ? regionAggregate.bolge_sorumlusu
+                          .split(" ")
+                          .map((w: string) => w[0])
+                          .join("")
+                          .slice(0, 2)
+                      : "?"}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {regionAggregate?.bolge_sorumlusu || "Atanmamış"}
+                    </p>
+                    <p className="text-xs text-gray-400">Bölge Sorumlusu</p>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>

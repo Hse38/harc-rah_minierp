@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function ReceiptLightbox({
   open,
@@ -14,9 +16,35 @@ export function ReceiptLightbox({
   bolgeNote: string | null;
 }) {
   if (!open) return null;
+
+  const [isZoomed, setIsZoomed] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, onClose]);
+
+  const isPdf = useMemo(() => {
+    try {
+      const u = new URL(receiptUrl, window.location.origin);
+      return u.pathname.toLowerCase().endsWith(".pdf");
+    } catch {
+      return receiptUrl.toLowerCase().split("?")[0].endsWith(".pdf");
+    }
+  }, [receiptUrl]);
+
+  useEffect(() => {
+    if (!open) return;
+    setIsZoomed(false);
+  }, [open, receiptUrl]);
+
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col bg-black/90"
+      className="fixed inset-0 z-50 flex flex-col bg-black/70"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -40,11 +68,33 @@ export function ReceiptLightbox({
             <p>{bolgeNote}</p>
           </div>
         )}
-        <img
-          src={receiptUrl}
-          alt="Fiş"
-          className="max-w-full h-auto max-h-[85vh] rounded-lg object-contain shadow-lg"
-        />
+        {isPdf ? (
+          <div className="w-full max-w-md rounded-xl bg-white/5 border border-white/10 p-4 text-center text-white">
+            <p className="text-sm text-white/80 mb-3">Bu fiş PDF formatında.</p>
+            <Button asChild variant="secondary">
+              <a href={receiptUrl} target="_blank" rel="noreferrer">
+                PDF’i Aç
+              </a>
+            </Button>
+          </div>
+        ) : (
+          <img
+            src={receiptUrl}
+            alt="Fiş"
+            onClick={() => setIsZoomed((z) => !z)}
+            className={[
+              "rounded-lg object-contain shadow-lg select-none",
+              isZoomed ? "max-w-none max-h-none" : "max-w-full max-h-[90vh]",
+              isZoomed ? "cursor-zoom-out" : "cursor-zoom-in",
+            ].join(" ")}
+            style={{
+              touchAction: "pinch-zoom",
+              transform: isZoomed ? "scale(1.5)" : undefined,
+              transformOrigin: "center center",
+              transition: "transform 180ms ease",
+            }}
+          />
+        )}
       </div>
     </div>
   );

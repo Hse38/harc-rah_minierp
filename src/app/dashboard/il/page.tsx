@@ -13,6 +13,7 @@ import { formatCurrency } from "@/lib/utils";
 import { EXPENSE_FIELDS_FULL } from "@/lib/expense-fields";
 import type { ExpenseStatus } from "@/types";
 import { BarChart2, List, Plus } from "lucide-react";
+import { useHighlightExpense } from "@/lib/use-highlight-expense";
 import {
   BarChart,
   Bar,
@@ -35,10 +36,15 @@ export default function IlPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"dashboard" | "list">("dashboard");
   const searchParams = useSearchParams();
+  const highlight = useHighlightExpense();
   useEffect(() => {
     const t = searchParams.get("tab");
     if (t === "dashboard" || t === "list") setActiveTab(t);
   }, [searchParams]);
+
+  useEffect(() => {
+    if (highlight) setActiveTab("list");
+  }, [highlight]);
 
   const il = profile?.il ?? "";
 

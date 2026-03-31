@@ -47,3 +47,22 @@
 .login-orb-1 { animation: login-float-1 18s ease-in-out infinite; }
 .login-orb-2 { animation: login-float-2 22s ease-in-out infinite; }
 .login-orb-3 { animation: login-float-3 20s ease-in-out infinite; }
+
+@keyframes highlight-flash {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    background-color: rgba(59, 130, 246, 0);
+  }
+  15% {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.35);
+    background-color: rgba(59, 130, 246, 0.1);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    background-color: rgba(59, 130, 246, 0);
+  }
+}
+
+.animate-highlight-flash {
+  animation: highlight-flash 1.5s ease-out 1;
+}

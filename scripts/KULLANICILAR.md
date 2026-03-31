@@ -23,7 +23,6 @@
 | Ege | Tevfik Ekin | tevfik.ekin@t3vakfi.org |
 
 ---
-
 ## 3. İl sorumluları → Hangi bölge sorumlusuna bağlı
 
 | İl | İl Sorumlusu | E-posta | Bağlı olduğu bölge sorumlusu |

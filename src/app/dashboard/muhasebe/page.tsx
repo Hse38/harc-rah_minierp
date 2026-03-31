@@ -17,6 +17,8 @@ import { Clock, CheckCircle, Download, Eye, EyeOff, FileImage, X, Check } from "
 import { toast } from "sonner";
 import { notifyApi } from "@/lib/notify-api";
 import { cn } from "@/lib/utils";
+import { useHighlightExpense } from "@/lib/use-highlight-expense";
+import { ReceiptLightbox } from "@/components/expenses/receipt-lightbox";
 
 function maskIban(iban: string): string {
   if (!iban || iban.length < 12) return iban;
@@ -58,6 +60,8 @@ export default function MuhasebePage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"awaiting" | "paid" | "export">("awaiting");
+  const highlight = useHighlightExpense();
+  const searchParams = useSearchParams();
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [datePreset, setDatePreset] = useState<DatePreset>("month");
@@ -77,12 +81,15 @@ export default function MuhasebePage() {
   } | null>(null);
   const [lastExport, setLastExport] = useState<{ end_date: string; export_date: string } | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     const t = searchParams.get("tab");
     if (t === "awaiting" || t === "paid" || t === "export") setActiveTab(t);
   }, [searchParams]);
+
+  useEffect(() => {
+    if (highlight) setActiveTab("awaiting");
+  }, [highlight]);
 
   useEffect(() => {
     const today = new Date().toISOString().slice(0, 10);
@@ -446,7 +453,7 @@ export default function MuhasebePage() {
                   </div>
                 ) : (
                   awaiting.map((e) => (
-                    <Card key={e.id} className="rounded-xl shadow-sm overflow-hidden">
+                    <Card key={e.id} data-expense-id={e.id} className="rounded-xl shadow-sm overflow-hidden">
                       <CardContent className="p-3 space-y-2">
                         <div className="flex justify-between items-start gap-2">
                           <label className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
@@ -517,7 +524,7 @@ export default function MuhasebePage() {
                   </div>
                 ) : (
                   paid.map((e) => (
-                    <Card key={e.id} className="rounded-xl shadow-sm overflow-hidden">
+                    <Card key={e.id} data-expense-id={e.id} className="rounded-xl shadow-sm overflow-hidden">
                       <CardContent className="p-3 space-y-2">
                         <div className="flex justify-between items-start gap-2">
                           <div>
@@ -612,29 +619,12 @@ export default function MuhasebePage() {
       />
 
       {receiptModal && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-black/95" role="dialog" aria-modal="true" aria-label="Fiş görüntüle">
-          <div className="flex items-center justify-between p-3 border-b border-white/10 bg-black/50">
-            <div className="min-w-0">
-              <p className="font-semibold text-white truncate">{receiptModal.expenseNumber} · {receiptModal.name}</p>
-              <p className="text-sm text-white/80">{formatCurrency(receiptModal.amount)}</p>
-            </div>
-            <button type="button" onClick={() => setReceiptModal(null)} className="rounded-lg bg-white/20 p-2 text-white hover:bg-white/30" aria-label="Kapat">
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-          <div className="flex-1 overflow-auto p-4 flex flex-col items-center">
-            <img src={receiptModal.url} alt="Fiş" className="max-w-full h-auto rounded-lg shadow-lg" style={{ maxHeight: "calc(100vh - 180px)" }} />
-            {receiptModal.aiAnalysis && (
-              <div className="mt-4 w-full max-w-md rounded-xl border border-white/20 bg-white/10 p-3 text-sm text-white/90">
-                <p className="font-medium text-white/90 mb-1">AI Analiz</p>
-                <p className="whitespace-pre-wrap">{receiptModal.aiAnalysis}</p>
-              </div>
-            )}
-          </div>
-          <div className="p-3 border-t border-white/10">
-            <Button variant="outline" className="w-full bg-white/10 border-white/20 text-white hover:bg-white/20" onClick={() => setReceiptModal(null)}>Kapat</Button>
-          </div>
-        </div>
+        <ReceiptLightbox
+          open={!!receiptModal}
+          onClose={() => setReceiptModal(null)}
+          receiptUrl={receiptModal.url}
+          bolgeNote={null}
+        />
       )}
     </div>
   );

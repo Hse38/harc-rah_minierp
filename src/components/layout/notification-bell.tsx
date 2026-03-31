@@ -25,6 +25,7 @@ const ROUTES: Record<string, string> = {
   koordinator: "/dashboard/koordinator",
   muhasebe: "/dashboard/muhasebe",
   yk: "/dashboard/yk",
+  admin: "/dashboard/admin/harcamalar",
 };
 
 export function NotificationBell({

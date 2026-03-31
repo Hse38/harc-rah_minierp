@@ -1,9 +1,12 @@
 import Link from "next/link";
+import { useState } from "react";
 import type { Expense } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "./status-badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Receipt, AlertTriangle } from "lucide-react";
+import { FileImage, Receipt, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ReceiptLightbox } from "@/components/expenses/receipt-lightbox";
 
 const TYPE_ICONS: Record<string, string> = {
   Ulaşım: "🚗",
@@ -24,8 +27,10 @@ export function ExpenseCard({
   showSubmitter?: boolean;
   actions?: React.ReactNode;
 }) {
+  const [receiptOpen, setReceiptOpen] = useState(false);
+
   const content = (
-    <Card className="transition-shadow hover:shadow-md">
+    <Card data-expense-id={expense.id} className="transition-shadow hover:shadow-md">
       <CardContent className="p-4">
         {expense.bolge_warning && expense.bolge_note && (
           <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 flex gap-2">
@@ -66,6 +71,24 @@ export function ExpenseCard({
             {expense.description}
           </p>
         )}
+        {expense.receipt_url && (
+          <div className="mt-3 flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setReceiptOpen(true);
+              }}
+            >
+              <FileImage className="h-3.5 w-3.5 mr-1.5" />
+              Fişi Gör
+            </Button>
+          </div>
+        )}
         {actions && (
           <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap gap-2">
             {actions}
@@ -76,7 +99,31 @@ export function ExpenseCard({
   );
 
   if (href) {
-    return <Link href={href}>{content}</Link>;
+    return (
+      <>
+        <Link href={href}>{content}</Link>
+        {expense.receipt_url && (
+          <ReceiptLightbox
+            open={receiptOpen}
+            onClose={() => setReceiptOpen(false)}
+            receiptUrl={expense.receipt_url}
+            bolgeNote={expense.bolge_note}
+          />
+        )}
+      </>
+    );
   }
-  return content;
+  return (
+    <>
+      {content}
+      {expense.receipt_url && (
+        <ReceiptLightbox
+          open={receiptOpen}
+          onClose={() => setReceiptOpen(false)}
+          receiptUrl={expense.receipt_url}
+          bolgeNote={expense.bolge_note}
+        />
+      )}
+    </>
+  );
 }

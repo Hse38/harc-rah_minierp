@@ -19,6 +19,8 @@ import { Receipt, Check, AlertCircle, X, BarChart2, Clock, CheckCircle, Plus } f
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { toast } from "sonner";
 import { notifyApi } from "@/lib/notify-api";
+import { useHighlightExpense } from "@/lib/use-highlight-expense";
+import { ReceiptLightbox } from "@/components/expenses/receipt-lightbox";
 import {
   Dialog,
   DialogContent,
@@ -62,15 +64,20 @@ export default function BolgePage() {
   const [rejectModal, setRejectModal] = useState<{ id: string; num: string } | null>(null);
   const [warnModal, setWarnModal] = useState<Expense | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
-  const [receiptModal, setReceiptModal] = useState<{ url: string; expenseId: string } | null>(null);
+  const [receiptModal, setReceiptModal] = useState<{ url: string; expenseId: string; bolgeNote: string | null } | null>(null);
   const [receiptViewedIds, setReceiptViewedIds] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<"dashboard" | "pending" | "done">("dashboard");
   const searchParams = useSearchParams();
+  const highlight = useHighlightExpense();
 
   useEffect(() => {
     const t = searchParams.get("tab");
     if (t === "dashboard" || t === "pending" || t === "done") setActiveTab(t);
   }, [searchParams]);
+
+  useEffect(() => {
+    if (highlight) setActiveTab("pending");
+  }, [highlight]);
 
   const bolge = profile?.bolge ?? "";
 
@@ -551,7 +558,7 @@ export default function BolgePage() {
               const buttonsDisabled = hasReceipt && !receiptViewed;
               const typeIcon = { Ulaşım: "🚗", Konaklama: "🏨", Yemek: "🍽️", Malzeme: "📦", Diğer: "📋" }[e.expense_type] ?? "📋";
               return (
-                <Card key={e.id} className="overflow-hidden">
+                <Card key={e.id} data-expense-id={e.id} className="overflow-hidden">
                   <CardContent className="p-4 space-y-2.5">
                     <div className="flex justify-between items-start gap-2">
                       <div>
@@ -571,7 +578,7 @@ export default function BolgePage() {
                     {hasReceipt ? (
                       <button
                         type="button"
-                        onClick={() => setReceiptModal({ url: e.receipt_url!, expenseId: e.id })}
+                        onClick={() => setReceiptModal({ url: e.receipt_url!, expenseId: e.id, bolgeNote: e.bolge_note || null })}
                         className="flex items-center gap-2 text-sm text-primary font-medium"
                       >
                         <Receipt className="h-4 w-4" />
@@ -633,7 +640,7 @@ export default function BolgePage() {
               </div>
             ) : (
               done.map((e) => (
-                <Card key={e.id}>
+                <Card key={e.id} data-expense-id={e.id}>
                   <CardContent className="p-4">
                     <div className="flex justify-between items-start">
                       <div>
@@ -679,28 +686,17 @@ export default function BolgePage() {
         loading={actionLoading}
       />
 
-      <Dialog
-        open={!!receiptModal}
-        onOpenChange={(open) => {
-          if (!open && receiptModal) {
+      {receiptModal && (
+        <ReceiptLightbox
+          open={!!receiptModal}
+          onClose={() => {
             setReceiptViewedIds((prev) => new Set(prev).add(receiptModal.expenseId));
             setReceiptModal(null);
-          }
-        }}
-      >
-        <DialogContent className="max-w-[95vw] max-h-[90vh]" showClose={true}>
-          <DialogHeader>
-            <DialogTitle>Fiş</DialogTitle>
-          </DialogHeader>
-          {receiptModal && (
-            <img
-              src={receiptModal.url}
-              alt="Fiş"
-              className="w-full h-auto rounded object-contain max-h-[70vh]"
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+          }}
+          receiptUrl={receiptModal.url}
+          bolgeNote={receiptModal.bolgeNote}
+        />
+      )}
     </div>
   );
 }

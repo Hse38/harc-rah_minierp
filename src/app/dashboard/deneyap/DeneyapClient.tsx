@@ -21,6 +21,7 @@ import { formatCurrency, formatDate, bolgeAdi } from "@/lib/utils";
 import { BarChart2, List, Plus, Pencil, XCircle, Send } from "lucide-react";
 import { toast } from "sonner";
 import type { DashboardDeneyapResponse } from "@/app/api/dashboard/route";
+import { useHighlightExpense } from "@/lib/use-highlight-expense";
 
 const DeneyapChart = dynamic(
   () => import("@/components/dashboard/DeneyapChart").then((m) => ({ default: m.DeneyapChart })),
@@ -37,6 +38,7 @@ export function DeneyapClient({
 }) {
   const searchParams = useSearchParams();
   const supabase = createClient();
+  const highlight = useHighlightExpense();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(!initialData);
   const [activeTab, setActiveTab] = useState<"dashboard" | "list">("dashboard");
@@ -49,6 +51,10 @@ export function DeneyapClient({
     const t = searchParams.get("tab");
     if (t === "dashboard" || t === "list") setActiveTab(t);
   }, [searchParams]);
+
+  useEffect(() => {
+    if (highlight) setActiveTab("list");
+  }, [highlight]);
 
   const refetch = useCallback(async () => {
     const {

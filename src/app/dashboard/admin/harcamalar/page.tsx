@@ -24,7 +24,9 @@ import { REGION_LIMIT_SLUGS } from "@/lib/region-names";
 import { regionToTurkish } from "@/lib/region-names";
 import type { ExpenseStatus } from "@/types";
 import { formatCurrency } from "@/lib/utils";
-import { FileText, Shield } from "lucide-react";
+import { FileImage, FileText, Shield } from "lucide-react";
+import { useHighlightExpense } from "@/lib/use-highlight-expense";
+import { ReceiptLightbox } from "@/components/expenses/receipt-lightbox";
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: "", label: "Tümü" },
@@ -44,6 +46,7 @@ type ExpenseRow = {
   submitter_name: string;
   il: string | null;
   bolge: string | null;
+  receipt_url?: string | null;
   amount: number;
   status: ExpenseStatus;
   expense_type: string;
@@ -51,9 +54,11 @@ type ExpenseRow = {
 };
 
 export default function AdminHarcamalarPage() {
+  useHighlightExpense();
   const [list, setList] = useState<ExpenseRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<ExpenseRow | null>(null);
+  const [receiptLightbox, setReceiptLightbox] = useState<{ url: string } | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
   const [bolgeFilter, setBolgeFilter] = useState("");
   const [ilFilter, setIlFilter] = useState("");
@@ -194,6 +199,7 @@ export default function AdminHarcamalarPage() {
                 {list.map((e) => (
                   <tr
                     key={e.id}
+                    data-expense-id={e.id}
                     className="border-b border-slate-100 hover:bg-slate-50 cursor-pointer"
                     onClick={() => setDetail(e)}
                   >
@@ -232,6 +238,14 @@ export default function AdminHarcamalarPage() {
             </div>
           )}
           <DialogFooter className="gap-2 flex-wrap">
+            {detail?.receipt_url && (
+              <Button
+                variant="outline"
+                onClick={() => setReceiptLightbox({ url: detail.receipt_url! })}
+              >
+                <FileImage className="h-4 w-4 mr-2" /> Fişi Gör
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={() => {
@@ -298,6 +312,13 @@ export default function AdminHarcamalarPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ReceiptLightbox
+        open={!!receiptLightbox}
+        onClose={() => setReceiptLightbox(null)}
+        receiptUrl={receiptLightbox?.url ?? ""}
+        bolgeNote={null}
+      />
     </div>
   );
 }

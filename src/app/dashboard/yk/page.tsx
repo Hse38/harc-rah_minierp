@@ -38,7 +38,7 @@ import {
   Legend,
   CartesianGrid,
 } from "recharts";
-import { LayoutDashboard, MapPin, List, TrendingUp, TrendingDown, ChevronDown, ChevronUp, X, BarChart2, CreditCard, Activity } from "lucide-react";
+import { LayoutDashboard, MapPin, List, TrendingUp, TrendingDown, ChevronDown, ChevronUp, X, BarChart2, CreditCard, Activity, FileImage } from "lucide-react";
 
 /** Tüm bölgeler (Bölgeler sekmesinde hepsini göstermek için) */
 const TUM_BOLGE_SLUGS = [...REGION_LIMIT_SLUGS];
@@ -46,30 +46,22 @@ import { DASHBOARD_COLORS, CHART_COLORS, formatCurrencyTR } from "@/lib/dashboar
 import { EXPENSE_FIELDS_FULL } from "@/lib/expense-fields";
 import TurkiyeHaritasi from "@/components/dashboard/TurkiyeHaritasi";
 import Link from "next/link";
+import { useHighlightExpense } from "@/lib/use-highlight-expense";
+import { ReceiptLightbox } from "@/components/expenses/receipt-lightbox";
 
 type TimeFilter = "weekly" | "monthly" | "yearly" | "all";
 type YkTab = "genel" | "bolgeler" | "harcamalar";
 
-const STATUS_COLORS: Record<ExpenseStatus, string> = {
-  pending_bolge: "#D97706",
-  pending_koord: "#64748B",
-  approved_bolge: "#2563EB",
-  rejected_bolge: "#DC2626",
-  approved_koord: "#16A34A",
-  rejected_koord: "#DC2626",
-  paid: "#7C3AED",
-  deleted: "#6B7280",
+/** Donut: status paletinden ayrı, sabit tipler + bilinmeyen için fallback */
+const EXPENSE_TYPE_PIE_COLORS: Record<string, string> = {
+  Ulaşım: "#0D9488",
+  Konaklama: "#E11D48",
+  Yemek: "#CA8A04",
+  Malzeme: "#0891B2",
+  Diğer: "#57534E",
 };
-const STATUS_LABELS: Record<ExpenseStatus, string> = {
-  pending_bolge: "Bölge bekliyor",
-  pending_koord: "TÇK bekliyor",
-  approved_bolge: "Koord. bekliyor",
-  rejected_bolge: "Red (bölge)",
-  approved_koord: "Onaylandı",
-  rejected_koord: "Red (koord)",
-  paid: "Ödendi",
-  deleted: "Silindi",
-};
+const EXPENSE_TYPE_PIE_FALLBACK = "#94A3B8";
+
 const EXPENSE_TYPES: ExpenseType[] = ["Ulaşım", "Konaklama", "Yemek", "Malzeme", "Diğer"];
 
 const FILTER_STATUS_OPTIONS: { value: ExpenseStatus; label: string }[] = [
@@ -94,14 +86,20 @@ function getPeriodRange(period: TimeFilter): { start: Date; end: Date } | null {
 
 export default function YkPage() {
   const supabase = createClient();
+  const highlight = useHighlightExpense();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<YkTab>("genel");
+  const [receiptLightbox, setReceiptLightbox] = useState<{ url: string; bolgeNote: string | null } | null>(null);
   const searchParams = useSearchParams();
   useEffect(() => {
     const t = searchParams.get("tab");
     if (t === "genel" || t === "bolgeler" || t === "harcamalar") setActiveTab(t);
   }, [searchParams]);
+
+  useEffect(() => {
+    if (highlight) setActiveTab("harcamalar");
+  }, [highlight]);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("monthly");
   const [detailExpense, setDetailExpense] = useState<Expense | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -215,29 +213,28 @@ export default function YkPage() {
     return months;
   }, [expenses]);
 
-  const statusPieData = useMemo(() => {
-    const byStatus: Record<ExpenseStatus, number> = {} as Record<ExpenseStatus, number>;
-    (
-      [
-        "pending_bolge",
-        "pending_koord",
-        "approved_bolge",
-        "rejected_bolge",
-        "approved_koord",
-        "rejected_koord",
-        "paid",
-      ] as ExpenseStatus[]
-    ).forEach((s) => (byStatus[s] = 0));
+  const expenseTypePieData = useMemo(() => {
+    const counts: Record<string, number> = {};
     expenses.forEach((e) => {
-      byStatus[e.status] = (byStatus[e.status] ?? 0) + 1;
+      const raw = e.expense_type;
+      const t =
+        typeof raw === "string" && raw.trim() !== "" ? raw.trim() : "Diğer";
+      counts[t] = (counts[t] ?? 0) + 1;
     });
-    return Object.entries(byStatus)
-      .filter(([, v]) => v > 0)
-      .map(([status, value]) => ({
-        name: STATUS_LABELS[status as ExpenseStatus],
-        value,
-        status: status as ExpenseStatus,
-      }));
+    const entries = Object.entries(counts).filter(([, v]) => v > 0);
+    entries.sort((a, b) => {
+      const ia = EXPENSE_TYPES.indexOf(a[0] as ExpenseType);
+      const ib = EXPENSE_TYPES.indexOf(b[0] as ExpenseType);
+      if (ia === -1 && ib === -1) return a[0].localeCompare(b[0], "tr");
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
+    return entries.map(([expenseType, value]) => ({
+      name: expenseType,
+      value,
+      expenseType,
+    }));
   }, [expenses]);
 
   const regionCards = useMemo(() => {
@@ -558,15 +555,15 @@ export default function YkPage() {
               </Card>
             )}
 
-            {statusPieData.length > 0 && (
+            {expenseTypePieData.length > 0 && (
               <Card className="rounded-2xl shadow-sm border-gray-200 overflow-hidden">
                 <CardContent className="p-4 md:p-5">
-                  <h3 className="text-sm md:text-[14px] font-semibold text-[#374151] mb-3">Durum Dağılımı</h3>
+                  <h3 className="text-sm md:text-[14px] font-semibold text-[#374151] mb-3">Harcama Tipi Dağılımı</h3>
                   <div className="h-56 md:h-[280px] flex items-center justify-center">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
-                          data={statusPieData}
+                          data={expenseTypePieData}
                           cx="50%"
                           cy="50%"
                           innerRadius={60}
@@ -575,8 +572,14 @@ export default function YkPage() {
                           dataKey="value"
                           label={false}
                         >
-                          {statusPieData.map((d) => (
-                            <Cell key={d.status} fill={STATUS_COLORS[d.status]} />
+                          {expenseTypePieData.map((d) => (
+                            <Cell
+                              key={d.expenseType}
+                              fill={
+                                EXPENSE_TYPE_PIE_COLORS[d.expenseType] ??
+                                EXPENSE_TYPE_PIE_FALLBACK
+                              }
+                            />
                           ))}
                         </Pie>
                         <Tooltip formatter={(value: number, name: string, props: { payload?: { name: string; value: number } }) => {
@@ -938,6 +941,7 @@ export default function YkPage() {
                 tableExpenses.map((e) => (
                   <Card
                     key={e.id}
+                    data-expense-id={e.id}
                     className="rounded-2xl shadow-sm cursor-pointer hover:bg-slate-50 transition-colors"
                     onClick={() => { setDetailExpense(e); setDetailOpen(true); }}
                   >
@@ -946,6 +950,21 @@ export default function YkPage() {
                       <span className="font-medium">{e.submitter_name}</span>
                       <span className="text-slate-500">{e.il} · {bolgeAdi(e.bolge)}</span>
                       <span className="text-slate-500">{e.expense_type}</span>
+                      {e.receipt_url && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={(ev) => {
+                            ev.preventDefault();
+                            ev.stopPropagation();
+                            setReceiptLightbox({ url: e.receipt_url!, bolgeNote: e.bolge_note || null });
+                          }}
+                        >
+                          <FileImage className="h-3.5 w-3.5 mr-1" /> Fişi Gör
+                        </Button>
+                      )}
                       <span className="font-semibold text-slate-800 ml-auto">{formatCurrency(e.amount)}</span>
                       <StatusBadge status={e.status} />
                       <span className="text-slate-400 text-xs w-full">{formatDate(e.created_at)}</span>
@@ -957,6 +976,13 @@ export default function YkPage() {
           </div>
         )}
       </div>
+
+      <ReceiptLightbox
+        open={!!receiptLightbox}
+        onClose={() => setReceiptLightbox(null)}
+        receiptUrl={receiptLightbox?.url ?? ""}
+        bolgeNote={receiptLightbox?.bolgeNote ?? null}
+      />
 
       <BottomNav
         tabs={[

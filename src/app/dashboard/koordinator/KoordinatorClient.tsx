@@ -22,6 +22,7 @@ import { Check, X, BarChart2, Clock, CheckCircle, FileImage, Wallet, Pencil, Che
 import { toast } from "sonner";
 import { notifyApi } from "@/lib/notify-api";
 import type { DashboardKoordinatorResponse } from "@/lib/dashboard-data";
+import { useHighlightExpense } from "@/lib/use-highlight-expense";
 
 const KoordinatorCharts = dynamic(
   () => import("@/components/dashboard/KoordinatorCharts").then((m) => ({ default: m.KoordinatorCharts })),
@@ -49,6 +50,7 @@ export function KoordinatorClient({
   initialData?: DashboardKoordinatorResponse | null;
 }) {
   const supabase = createClient();
+  const highlight = useHighlightExpense();
   const [allExpenses, setAllExpenses] = useState<Expense[]>(initialData?.expenses ?? []);
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("monthly");
   const [activeTab, setActiveTab] = useState<"dashboard" | "awaiting" | "completed" | "limits">("dashboard");
@@ -67,6 +69,10 @@ export function KoordinatorClient({
     const t = searchParams.get("tab");
     if (t === "dashboard" || t === "awaiting" || t === "completed" || t === "limits") setActiveTab(t);
   }, [searchParams]);
+
+  useEffect(() => {
+    if (highlight) setActiveTab("awaiting");
+  }, [highlight]);
 
   const { start: periodStart, end: periodEnd } = useMemo(() => getPeriodRange(periodFilter), [periodFilter]);
 
@@ -534,7 +540,7 @@ export function KoordinatorClient({
               </div>
             ) : (
               awaiting.map((e) => (
-                <Card key={e.id} className="rounded-2xl shadow-sm">
+                <Card key={e.id} data-expense-id={e.id} className="rounded-2xl shadow-sm">
                   <CardContent className="p-4 space-y-3">
                     {e.bolge_warning && e.bolge_note && (
                       <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
@@ -590,7 +596,7 @@ export function KoordinatorClient({
               </div>
             ) : (
               completed.map((e) => (
-                <Card key={e.id} className="rounded-2xl shadow-sm">
+                <Card key={e.id} data-expense-id={e.id} className="rounded-2xl shadow-sm">
                   <CardContent className="p-4 space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
