@@ -18,6 +18,7 @@ export type ExpenseStatus =
   | "deleted";
 
 export type ExpenseType =
+  | "Yakıt"
   | "Ulaşım"
   | "Konaklama"
   | "Yemek"
@@ -68,6 +69,10 @@ export interface Expense {
   description: string;
   receipt_url: string | null;
   ai_analysis: string | null;
+  manuel_giris?: boolean;
+  fis_hash?: string | null;
+  eski_fis?: boolean;
+  kategori_detay?: unknown | null;
   status: ExpenseStatus;
   bolge_note: string | null;
   bolge_warning: boolean;
@@ -94,6 +99,7 @@ export interface ReceiptAnalysis {
   isletme?: string;
   kategori?: ExpenseType;
   aciklama?: string;
+  fis_hash?: string;
   error?: string;
   raw?: string;
 }

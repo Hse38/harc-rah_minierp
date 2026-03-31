@@ -20,8 +20,10 @@ import {
   LogOut,
   Users,
   FileText,
+  Receipt,
   Megaphone,
   Activity,
+  TrendingUp,
 } from "lucide-react";
 import { useLang } from "@/contexts/LanguageContext";
 import { t, type TranslationKey } from "@/lib/i18n";
@@ -66,6 +68,7 @@ function getNavForRole(role: string): NavItem[] {
         { labelKey: "nav_awaiting", href: "/dashboard/koordinator?tab=awaiting", icon: Clock },
         { labelKey: "nav_completed", href: "/dashboard/koordinator?tab=completed", icon: CheckCircle },
         { labelKey: "nav_limits", href: "/dashboard/koordinator?tab=limits", icon: Wallet },
+        { labelKey: "nav_statistics", href: "/dashboard/koordinator/istatistikler", icon: TrendingUp },
       ];
     case "muhasebe":
       return [
@@ -78,12 +81,15 @@ function getNavForRole(role: string): NavItem[] {
         { labelKey: "nav_general", href: "/dashboard/yk?tab=genel", icon: LayoutDashboard },
         { labelKey: "nav_regions", href: "/dashboard/yk?tab=bolgeler", icon: MapPin },
         { labelKey: "nav_all_expenses", href: "/dashboard/yk?tab=harcamalar", icon: List },
+        { labelKey: "nav_statistics", href: "/dashboard/koordinator/istatistikler", icon: TrendingUp },
       ];
     case "admin":
       return [
         { labelKey: "nav_dashboard", href: "/dashboard/admin", icon: BarChart2 },
         { labelKey: "admin_nav_users", href: "/dashboard/admin/kullanicilar", icon: Users },
         { labelKey: "admin_nav_expenses", href: "/dashboard/admin/harcamalar", icon: FileText },
+        { labelKey: "admin_nav_receipt_archive", href: "/dashboard/admin/fis-arsivi", icon: Receipt },
+        { labelKey: "nav_statistics", href: "/dashboard/koordinator/istatistikler", icon: TrendingUp },
         { labelKey: "admin_nav_announcements", href: "/dashboard/admin/duyurular", icon: Megaphone },
         { labelKey: "admin_nav_logs", href: "/dashboard/admin/loglar", icon: Activity },
       ];

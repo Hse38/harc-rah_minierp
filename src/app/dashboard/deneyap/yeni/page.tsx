@@ -25,8 +25,14 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { notifyApi } from "@/lib/notify-api";
 import { PROFILE_FIELDS_FORM } from "@/lib/expense-fields";
 import { formatCurrency } from "@/lib/utils";
+import {
+  KategoriEkAlanlari,
+  type KategoriDetay,
+  type KategoriDetayErrors,
+} from "@/components/KategoriEkAlanlari";
 
 const EXPENSE_TYPES: ExpenseType[] = [
+  "Yakıt",
   "Ulaşım",
   "Konaklama",
   "Yemek",
@@ -43,12 +49,26 @@ export default function DeneyapYeniPage() {
   const [receiptUrl, setReceiptUrl] = useState("");
   const [analysis, setAnalysis] = useState<ReceiptAnalysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [fisHash, setFisHash] = useState("");
+  const [manuelGiris, setManuelGiris] = useState(false);
+  const [aiSnapshot, setAiSnapshot] = useState<{
+    amount: string;
+    expense_type: ExpenseType;
+    description: string;
+  } | null>(null);
+  const [oldReceiptNeedsConfirm, setOldReceiptNeedsConfirm] = useState(false);
+  const [oldReceiptConfirmed, setOldReceiptConfirmed] = useState(false);
+  const [vekaletIller, setVekaletIller] = useState<string[]>([]);
+  const [selectedIl, setSelectedIl] = useState<string>("");
   const [form, setForm] = useState({
     iban: "",
     expense_type: "Diğer" as ExpenseType,
     amount: "",
     description: "",
   });
+  const [kategoriDetay, setKategoriDetay] = useState<KategoriDetay>({});
+  const [kategoriDetayErrors, setKategoriDetayErrors] =
+    useState<KategoriDetayErrors>({});
 
   useEffect(() => {
     (async () => {
@@ -66,24 +86,78 @@ export default function DeneyapYeniPage() {
         .single();
       const pr = p as Profile | null;
       setProfile(pr ?? null);
+      setSelectedIl(pr?.il ?? "");
       setForm((f) => ({
         ...f,
         iban: pr?.iban ?? "",
       }));
+      if (pr?.id) {
+        const { data: vekalet } = await supabase
+          .from("vekalet_atamalari")
+          .select("asil_il")
+          .eq("vekil_user_id", pr.id);
+        const list = ((vekalet ?? []) as { asil_il?: string }[])
+          .map((r) => String(r.asil_il ?? "").trim())
+          .filter(Boolean);
+        setVekaletIller(Array.from(new Set(list)));
+      }
       setLoading(false);
     })();
   }, [supabase, router]);
 
+  function parseReceiptDate(input?: string): Date | null {
+    if (!input) return null;
+    const s = String(input).trim();
+    if (!s) return null;
+    const iso = Date.parse(s);
+    if (!Number.isNaN(iso)) return new Date(iso);
+    const m = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+    if (m) {
+      const d = parseInt(m[1], 10);
+      const mo = parseInt(m[2], 10) - 1;
+      const y = parseInt(m[3], 10);
+      const dt = new Date(y, mo, d);
+      return Number.isNaN(dt.getTime()) ? null : dt;
+    }
+    return null;
+  }
+
+  function isOlderThanDays(date: Date, days: number): boolean {
+    const diffMs = Date.now() - date.getTime();
+    return diffMs > days * 24 * 60 * 60 * 1000;
+  }
+
   function handleAnalysisResult(data: ReceiptAnalysis | null) {
     setAnalysis(data);
     setAnalyzing(false);
+    setFisHash(data?.fis_hash ?? "");
+    setManuelGiris(false);
+    setOldReceiptConfirmed(false);
     if (data && !data.error) {
-      if (data.tutar != null)
-        setForm((f) => ({ ...f, amount: String(data.tutar) }));
-      if (data.kategori)
-        setForm((f) => ({ ...f, expense_type: data.kategori ?? f.expense_type }));
-      if (data.aciklama)
-        setForm((f) => ({ ...f, description: data.aciklama ?? "" }));
+      const nextAmount = data.tutar != null ? String(data.tutar) : form.amount;
+      const nextType = (data.kategori ?? form.expense_type) as ExpenseType;
+      const nextDesc = data.aciklama != null ? String(data.aciklama) : form.description;
+      setForm((f) => ({
+        ...f,
+        amount: nextAmount,
+        expense_type: nextType,
+        description: nextDesc,
+      }));
+      setAiSnapshot({ amount: nextAmount, expense_type: nextType, description: nextDesc });
+      setKategoriDetayErrors({});
+      if (nextType === "Yakıt") setKategoriDetay({ km: "" });
+      else if (nextType === "Yemek") setKategoriDetay({ kisi_sayisi: "" });
+      else if (nextType === "Konaklama") setKategoriDetay({ gece_sayisi: "" });
+      else if (nextType === "Ulaşım") setKategoriDetay({ tip: "km", deger: "" });
+      else if (nextType === "Diğer") setKategoriDetay({ aciklama: "" });
+      else setKategoriDetay({});
+
+      const dt = parseReceiptDate(data.tarih);
+      const isOld = dt ? isOlderThanDays(dt, 60) : false;
+      setOldReceiptNeedsConfirm(isOld);
+    } else {
+      setAiSnapshot(null);
+      setOldReceiptNeedsConfirm(false);
     }
   }
 
@@ -106,83 +180,87 @@ export default function DeneyapYeniPage() {
       toast.error("Fiş yüklemek zorunludur");
       return;
     }
+    if (oldReceiptNeedsConfirm && !oldReceiptConfirmed) {
+      toast.error("Bu fiş 2 aydan eski görünüyor. Devam etmek için onaylayın.");
+      return;
+    }
+
+    const kdErr: KategoriDetayErrors = {};
+    if (form.expense_type === "Yakıt") {
+      const km = (kategoriDetay as { km?: unknown }).km;
+      if (km === "" || km == null || Number(km) <= 0) kdErr.km = "Bu alan zorunludur";
+    } else if (form.expense_type === "Yemek") {
+      const v = (kategoriDetay as { kisi_sayisi?: unknown }).kisi_sayisi;
+      if (v === "" || v == null || Number(v) <= 0) kdErr.kisi_sayisi = "Bu alan zorunludur";
+    } else if (form.expense_type === "Konaklama") {
+      const v = (kategoriDetay as { gece_sayisi?: unknown }).gece_sayisi;
+      if (v === "" || v == null || Number(v) <= 0) kdErr.gece_sayisi = "Bu alan zorunludur";
+    } else if (form.expense_type === "Ulaşım") {
+      const tip = (kategoriDetay as { tip?: unknown }).tip;
+      const deger = (kategoriDetay as { deger?: unknown }).deger;
+      if (!tip) kdErr.tip = "Bu alan zorunludur";
+      if (deger === "" || deger == null || Number(deger) <= 0) kdErr.deger = "Bu alan zorunludur";
+    } else if (form.expense_type === "Diğer") {
+      const a = String((kategoriDetay as { aciklama?: unknown }).aciklama ?? "").trim();
+      if (!a) kdErr.aciklama = "Bu alan zorunludur";
+    }
+    setKategoriDetayErrors(kdErr);
+    if (Object.keys(kdErr).length) {
+      toast.error("Ek bilgiler eksik.");
+      return;
+    }
     setSubmitting(true);
-    const maxAttempts = 3;
-    let lastError: unknown = null;
-    let expenseNumber: string | null = null;
 
     try {
-      const { getNextExpenseNumber } = await import("@/lib/expense-number");
-
-      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        lastError = null;
-        const { data: lastRow } = await supabase
-          .from("expenses")
-          .select("expense_number")
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        expenseNumber = await getNextExpenseNumber(
-          async () => (lastRow as { expense_number: string } | null)?.expense_number ?? null
-        );
-
-        const { error: insertErr } = await supabase.from("expenses").insert({
-          expense_number: expenseNumber,
-          submitter_id: profile.id,
-          submitter_name: profile.full_name,
+      const res = await fetch("/api/expenses/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           iban: form.iban || profile.iban || "",
-          il: profile.il || "",
-          bolge: profile.bolge || "",
           expense_type: form.expense_type,
           amount,
           description: form.description || "",
-          receipt_url: receiptUrl || null,
+          receipt_url: receiptUrl,
           ai_analysis: analysis ? JSON.stringify(analysis) : null,
-          status: "pending_bolge",
+          manuel_giris: manuelGiris,
+          eski_fis: oldReceiptNeedsConfirm && oldReceiptConfirmed,
+          fis_hash: fisHash || null,
+          il: selectedIl || profile.il || "",
+          kategori_detay: kategoriDetay,
+        }),
+      });
+
+      const payload = (await res.json()) as
+        | { ok: true; id: string; expense_number: string }
+        | { error?: string };
+
+      if (!res.ok) {
+        const msg = (payload as { error?: string } | null)?.error;
+        toast.error(msg || "Kayıt oluşturulamadı.");
+        return;
+      }
+
+      const expenseNumber = (payload as { expense_number: string }).expense_number;
+      const expenseId = (payload as { id: string }).id;
+
+      if (expenseId && profile.bolge) {
+        notifyApi({
+          toRole: "bolge",
+          bolge: profile.bolge,
+          expenseId,
+          message: `[${expenseNumber}] yeni harcama bölge onayı bekliyor.`,
+          pushTitle: "TAMGA - Yeni Harcama",
+          pushBody: `${profile.full_name} · ${expenseNumber} · ${formatCurrency(amount)} onay bekliyor`,
+          pushUrl: "/dashboard/bolge",
         });
-
-        if (insertErr) {
-          lastError = insertErr;
-          if (attempt < maxAttempts && isDuplicateExpenseNumberError(insertErr)) continue;
-          throw insertErr;
-        }
-
-        const { data: inserted } = await supabase
-          .from("expenses")
-          .select("id")
-          .eq("expense_number", expenseNumber)
-          .single();
-        const expenseId = (inserted as { id: string } | null)?.id;
-
-        if (expenseId && profile.bolge) {
-          notifyApi({
-            toRole: "bolge",
-            bolge: profile.bolge,
-            expenseId,
-            message: `[${expenseNumber}] yeni harcama bölge onayı bekliyor.`,
-            pushTitle: "TAMGA - Yeni Harcama",
-            pushBody: `${profile.full_name} · ${expenseNumber} · ${formatCurrency(amount)} onay bekliyor`,
-            pushUrl: "/dashboard/bolge",
-          });
-        }
-
-        toast.success(
-          `${expenseNumber} gönderildi, bölge sorumlusunun onayı bekleniyor.`
-        );
-        window.location.href = "/dashboard/deneyap";
-        return;
       }
 
-      if (lastError && isDuplicateExpenseNumberError(lastError)) {
-        toast.error("Numara çakışması oluştu, lütfen tekrar deneyin.");
-        return;
-      }
-      throw lastError;
+      toast.success(
+        `${expenseNumber} gönderildi, bölge sorumlusunun onayı bekleniyor.`
+      );
+      window.location.href = "/dashboard/deneyap";
+      return;
     } catch (err: unknown) {
-      if (isDuplicateExpenseNumberError(err)) {
-        toast.error("Numara çakışması oluştu, lütfen tekrar deneyin.");
-        return;
-      }
       toast.error(
         err && typeof err === "object" && "message" in err
           ? String((err as { message: string }).message)
@@ -209,6 +287,8 @@ export default function DeneyapYeniPage() {
     );
   }
 
+  const amountParsed = parseFloat(String(form.amount ?? "").replace(",", "."));
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
@@ -221,6 +301,62 @@ export default function DeneyapYeniPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {oldReceiptNeedsConfirm && !oldReceiptConfirmed && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900">
+            <div className="font-medium">
+              ⚠️ Bu fiş 2 aydan eski görünüyor. Devam etmek istiyor musunuz?
+            </div>
+            <div className="mt-3 flex gap-2">
+              <Button
+                type="button"
+                variant="default"
+                onClick={() => setOldReceiptConfirmed(true)}
+                disabled={submitting}
+              >
+                Evet, devam et
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setOldReceiptNeedsConfirm(false);
+                  setOldReceiptConfirmed(false);
+                  setReceiptUrl("");
+                  setAnalysis(null);
+                  setFisHash("");
+                }}
+                disabled={submitting}
+              >
+                İptal
+              </Button>
+            </div>
+          </div>
+        )}
+        {vekaletIller.length > 0 && (
+          <div className="space-y-2">
+            <Label>İl Seçimi</Label>
+            <Select value={selectedIl} onValueChange={setSelectedIl} disabled={submitting}>
+              <SelectTrigger>
+                <SelectValue placeholder="İl seçin" />
+              </SelectTrigger>
+              <SelectContent>
+                {profile.il && (
+                  <SelectItem value={profile.il}>
+                    {profile.il} (Kendi İlin)
+                  </SelectItem>
+                )}
+                {vekaletIller
+                  .filter((x) => !profile.il || x !== profile.il)
+                  .map((il) => (
+                    <SelectItem key={il} value={il}>
+                      {il} (Vekaleten)
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-slate-500">Hangi il adına harcama oluşturulacak?</p>
+          </div>
+        )}
         {/* 1. ADIM — Fiş Yükle */}
         <div className="space-y-4">
           <h2 className="text-sm font-semibold text-slate-800">1. ADIM — Fiş yükle</h2>
@@ -243,6 +379,11 @@ export default function DeneyapYeniPage() {
               onUseManual={() => {
                 setAnalysis(null);
                 setReceiptUrl("");
+                setFisHash("");
+                setAiSnapshot(null);
+                setManuelGiris(true);
+                setOldReceiptNeedsConfirm(false);
+                setOldReceiptConfirmed(false);
               }}
             />
           )}
@@ -275,9 +416,30 @@ export default function DeneyapYeniPage() {
             <Label htmlFor="expense_type">Tür</Label>
             <Select
               value={form.expense_type}
-              onValueChange={(v) =>
-                setForm((f) => ({ ...f, expense_type: v as ExpenseType }))
-              }
+              onValueChange={(v) => {
+                const next = { ...form, expense_type: v as ExpenseType };
+                setForm(next);
+                setKategoriDetayErrors({});
+                const nextType = v as ExpenseType;
+                if (nextType === "Yakıt") setKategoriDetay({ km: "" });
+                else if (nextType === "Yemek") setKategoriDetay({ kisi_sayisi: "" });
+                else if (nextType === "Konaklama") setKategoriDetay({ gece_sayisi: "" });
+                else if (nextType === "Ulaşım") setKategoriDetay({ tip: "km", deger: "" });
+                else if (nextType === "Diğer") setKategoriDetay({ aciklama: "" });
+                else setKategoriDetay({});
+                if (!manuelGiris) {
+                  if (aiSnapshot) {
+                    if (
+                      next.amount !== aiSnapshot.amount ||
+                      next.expense_type !== aiSnapshot.expense_type ||
+                      next.description !== aiSnapshot.description
+                    )
+                      setManuelGiris(true);
+                  } else {
+                    setManuelGiris(true);
+                  }
+                }
+              }}
               disabled={submitting}
             >
               <SelectTrigger id="expense_type">
@@ -292,6 +454,17 @@ export default function DeneyapYeniPage() {
               </SelectContent>
             </Select>
           </div>
+          <KategoriEkAlanlari
+            category={form.expense_type}
+            amount={Number.isFinite(amountParsed) ? amountParsed : null}
+            value={kategoriDetay}
+            onChange={(next) => {
+              setKategoriDetay(next);
+              setKategoriDetayErrors({});
+            }}
+            errors={kategoriDetayErrors}
+            disabled={submitting}
+          />
           <div className="space-y-2">
             <Label htmlFor="amount">Tutar (₺)</Label>
             <Input
@@ -299,7 +472,22 @@ export default function DeneyapYeniPage() {
               type="text"
               inputMode="decimal"
               value={form.amount}
-              onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
+              onChange={(e) => {
+                const next = { ...form, amount: e.target.value };
+                setForm(next);
+                if (!manuelGiris) {
+                  if (aiSnapshot) {
+                    if (
+                      next.amount !== aiSnapshot.amount ||
+                      next.expense_type !== aiSnapshot.expense_type ||
+                      next.description !== aiSnapshot.description
+                    )
+                      setManuelGiris(true);
+                  } else {
+                    setManuelGiris(true);
+                  }
+                }
+              }}
               placeholder="0,00"
               disabled={submitting}
             />
@@ -309,9 +497,22 @@ export default function DeneyapYeniPage() {
             <Textarea
               id="description"
               value={form.description}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, description: e.target.value }))
-              }
+              onChange={(e) => {
+                const next = { ...form, description: e.target.value };
+                setForm(next);
+                if (!manuelGiris) {
+                  if (aiSnapshot) {
+                    if (
+                      next.amount !== aiSnapshot.amount ||
+                      next.expense_type !== aiSnapshot.expense_type ||
+                      next.description !== aiSnapshot.description
+                    )
+                      setManuelGiris(true);
+                  } else {
+                    setManuelGiris(true);
+                  }
+                }
+              }}
               placeholder="Kısa açıklama"
               rows={2}
               disabled={submitting}
@@ -322,7 +523,7 @@ export default function DeneyapYeniPage() {
         <Button
           type="submit"
           className="w-full"
-          disabled={submitting}
+          disabled={submitting || !receiptUrl}
         >
           {submitting ? "Gönderiliyor..." : "Gönder"}
         </Button>

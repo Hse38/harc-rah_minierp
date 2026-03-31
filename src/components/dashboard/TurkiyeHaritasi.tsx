@@ -221,7 +221,11 @@ interface IlData {
 type ProfileRow = { id: string; full_name: string | null; il: string | null; role: string | null; bolge: string | null };
 type ExpenseRow = { il?: string; amount?: number; status?: string; submitter_id?: string };
 
-export default function TurkiyeHaritasi() {
+export default function TurkiyeHaritasi({
+  dataSource = "client",
+}: {
+  dataSource?: "client" | "admin";
+}) {
   const [svgContent, setSvgContent] = useState("");
   const [selectedIl, setSelectedIl] = useState<string | null>(null);
   const [selectedBolgeKey, setSelectedBolgeKey] = useState<string | null>(null);
@@ -256,15 +260,25 @@ export default function TurkiyeHaritasi() {
   useEffect(() => {
     let cancelled = false;
     const fetchData = async () => {
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, full_name, il, role, bolge");
-      const { data: expenses } = await supabase
-        .from("expenses")
-        .select("il, amount, status, submitter_id");
+      let profileList: ProfileRow[] = [];
+      let expenseList: ExpenseRow[] = [];
+
+      if (dataSource === "admin") {
+        const res = await fetch("/api/admin/map-expenses");
+        const j = (await res.json()) as { profiles?: ProfileRow[]; expenses?: ExpenseRow[] };
+        profileList = (j.profiles ?? []) as ProfileRow[];
+        expenseList = (j.expenses ?? []) as ExpenseRow[];
+      } else {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name, il, role, bolge");
+        const { data: expenses } = await supabase
+          .from("expenses")
+          .select("il, amount, status, submitter_id");
+        profileList = (profiles ?? []) as ProfileRow[];
+        expenseList = (expenses ?? []) as ExpenseRow[];
+      }
       if (cancelled) return;
-      const profileList = (profiles ?? []) as ProfileRow[];
-      const expenseList = (expenses ?? []) as ExpenseRow[];
       const profileById = new Map(profileList.map((p) => [p.id, p]));
 
       const grouped: Record<string, IlData> = {};
@@ -272,11 +286,11 @@ export default function TurkiyeHaritasi() {
         grouped[il] = { total: 0, count: 0, pending: 0, bolge_sorumlusu: "", persons: [] };
       });
 
-      // 4. Harcama verileri: submitter'ın il'i (profiles.il) üzerinden – JOIN mantığı
+      // Harcama verileri: öncelik expense.il (vekaletli il seçimi dahil), fallback submitter profiles.il
       expenseList.forEach((e) => {
         const profile = e.submitter_id ? profileById.get(e.submitter_id) : null;
-        const submitterIl = profile?.il ?? null;
-        const key = ilToKey(submitterIl);
+        const effectiveIl = (e.il ?? null) || (profile?.il ?? null);
+        const key = ilToKey(effectiveIl);
         if (!key || !grouped[key]) return;
         grouped[key].total += Number(e.amount) || 0;
         grouped[key].count++;
@@ -287,17 +301,19 @@ export default function TurkiyeHaritasi() {
 
       // 2. Bölge sorumlusu: il değil bolge üzerinden – her bölge için role=bolge olan profil
       const bolgeSet = new Set<string>(Object.values(IL_BOLGE_MAP));
+      const bolgeSorumlusuByBolge = new Map<string, string>();
+      profileList
+        .filter((p) => p.role === "bolge" && p.bolge)
+        .forEach((p) => {
+          if (!p.bolge) return;
+          if (!bolgeSorumlusuByBolge.has(p.bolge) && p.full_name) {
+            bolgeSorumlusuByBolge.set(p.bolge, p.full_name);
+          }
+        });
+
       for (const bolge of bolgeSet) {
-        const { data: bs } = await supabase
-          .from("profiles")
-          .select("full_name, bolge")
-          .eq("role", "bolge")
-          .eq("bolge", bolge)
-          .limit(1)
-          .maybeSingle();
-        if (cancelled) return;
-        if (bs && (bs as { full_name?: string }).full_name) {
-          const fullName = (bs as { full_name: string }).full_name;
+        const fullName = bolgeSorumlusuByBolge.get(bolge);
+        if (fullName) {
           Object.entries(IL_BOLGE_MAP).forEach(([il, b]) => {
             if (b === bolge && grouped[il]) {
               grouped[il].bolge_sorumlusu = fullName;
@@ -314,8 +330,8 @@ export default function TurkiyeHaritasi() {
           let status = "";
           expenseList.forEach((e) => {
             if (e.submitter_id !== p.id) return;
-            const subIl = profileById.get(e.submitter_id)?.il;
-            if (!ilMatches(subIl, ilKey)) return;
+            const effectiveIl = (e.il ?? null) || profileById.get(e.submitter_id)?.il;
+            if (!ilMatches(effectiveIl, ilKey)) return;
             amount += Number(e.amount) || 0;
             if (e.status) status = e.status;
           });
@@ -334,7 +350,7 @@ export default function TurkiyeHaritasi() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [dataSource]);
 
   const handleSvgClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as SVGPathElement;

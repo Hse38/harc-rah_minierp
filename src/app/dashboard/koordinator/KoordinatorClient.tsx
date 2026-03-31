@@ -33,7 +33,7 @@ type PeriodFilter = "weekly" | "monthly" | "yearly";
 
 const BOLGELER = ["marmara", "ege", "karadeniz", "iç anadolu", "akdeniz", "doğu anadolu", "güneydoğu anadolu"];
 const EXPENSE_FIELDS_KOORD =
-  "id,expense_number,submitter_id,submitter_name,iban,il,bolge,expense_type,amount,description,receipt_url,ai_analysis,status,bolge_note,bolge_warning,reviewed_by_bolge,reviewed_by_koord,reviewed_at_bolge,reviewed_at_koord,created_at";
+  "id,expense_number,submitter_id,submitter_name,iban,il,bolge,expense_type,amount,description,receipt_url,ai_analysis,manuel_giris,eski_fis,fis_hash,kategori_detay,status,bolge_note,bolge_warning,reviewed_by_bolge,reviewed_by_koord,reviewed_at_bolge,reviewed_at_koord,created_at";
 
 function getPeriodRange(period: PeriodFilter): { start: Date; end: Date } {
   const end = new Date();
@@ -547,6 +547,16 @@ export function KoordinatorClient({
                         {e.bolge_note}
                       </div>
                     )}
+                    {e.manuel_giris && (
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                        ⚠️ Bu harcama manuel girildi. Lütfen fişi kontrol edin.
+                      </div>
+                    )}
+                    {e.eski_fis && (
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                        ⚠️ Bu fiş 2 aydan eski.
+                      </div>
+                    )}
                     <div className="flex justify-between items-start gap-2">
                       <div>
                         <p className="font-semibold">{e.submitter_name}</p>
@@ -605,6 +615,16 @@ export function KoordinatorClient({
                       </div>
                       <StatusBadge status={e.status} />
                     </div>
+                    {e.manuel_giris && (
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                        ⚠️ Bu harcama manuel girildi. Lütfen fişi kontrol edin.
+                      </div>
+                    )}
+                    {e.eski_fis && (
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                        ⚠️ Bu fiş 2 aydan eski.
+                      </div>
+                    )}
                     {e.receipt_url && (
                       <Button
                         type="button"

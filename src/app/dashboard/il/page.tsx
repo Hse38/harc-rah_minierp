@@ -227,7 +227,15 @@ export default function IlPage() {
               <ul className="space-y-3">
                 {expenses.map((e) => (
                   <li key={e.id}>
-                    <ExpenseCard expense={e} showSubmitter />
+                    <ExpenseCard
+                      expense={e}
+                      showSubmitter
+                      deputyLabel={
+                        profile?.il && e.il && e.il !== profile.il
+                          ? `Vekaleten · ${e.il}`
+                          : undefined
+                      }
+                    />
                   </li>
                 ))}
               </ul>

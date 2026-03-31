@@ -126,7 +126,7 @@ export default function AdminDashboardPage() {
       </div>
       <div className="bg-white rounded-xl border border-gray-100 p-6">
         <h2 className="text-lg font-semibold mb-4">Türkiye Harcama Haritası</h2>
-        <TurkiyeHaritasi />
+        <TurkiyeHaritasi dataSource="admin" />
       </div>
       <Card>
         <CardHeader className="pb-2">

@@ -20,6 +20,7 @@ import { regionToTurkish } from "@/lib/region-names";
 import { BOLGE_ILLER } from "@/lib/bolge-iller";
 import {
   ArrowLeft,
+  Plus,
   Eye,
   EyeOff,
   Shield,
@@ -70,6 +71,15 @@ type Profile = {
   iban: string | null;
   phone: string | null;
   is_suspended?: boolean;
+};
+
+type VekaletRow = {
+  id: string;
+  vekil_user_id: string;
+  asil_il: string;
+  bolge: string;
+  created_at: string;
+  created_by: string | null;
 };
 
 function getInitials(name: string): string {
@@ -125,6 +135,12 @@ export default function AdminKullanicilarIdPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  const [vekaletList, setVekaletList] = useState<VekaletRow[]>([]);
+  const [vekaletLoading, setVekaletLoading] = useState(false);
+  const [vekaletOpen, setVekaletOpen] = useState(false);
+  const [vekaletSaving, setVekaletSaving] = useState(false);
+  const [newVekaletIl, setNewVekaletIl] = useState("");
+
   useEffect(() => {
     (async () => {
       const res = await fetch(`/api/admin/users/${id}`);
@@ -149,6 +165,70 @@ export default function AdminKullanicilarIdPage() {
       setLoading(false);
     })();
   }, [id]);
+
+  async function fetchVekalet() {
+    setVekaletLoading(true);
+    try {
+      const res = await fetch(`/api/admin/users/${id}/vekalet`);
+      if (!res.ok) return;
+      const data = (await res.json()) as VekaletRow[];
+      setVekaletList(Array.isArray(data) ? data : []);
+    } finally {
+      setVekaletLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!profile) return;
+    if (profile.role === "il" || profile.role === "deneyap") {
+      fetchVekalet();
+    } else {
+      setVekaletList([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id, profile?.role]);
+
+  async function addVekalet() {
+    if (!newVekaletIl.trim()) return;
+    setVekaletSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/users/${id}/vekalet`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ asil_il: newVekaletIl }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError((data as { error?: string }).error || "Vekalet eklenemedi");
+        return;
+      }
+      setNewVekaletIl("");
+      setVekaletOpen(false);
+      await fetchVekalet();
+    } finally {
+      setVekaletSaving(false);
+    }
+  }
+
+  async function removeVekalet(vekaletId: string) {
+    if (!confirm("Vekalet kaldırılacak. Emin misiniz?")) return;
+    setVekaletLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/users/${id}/vekalet?vekalet_id=${encodeURIComponent(vekaletId)}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError((data as { error?: string }).error || "Vekalet kaldırılamadı");
+        return;
+      }
+      await fetchVekalet();
+    } finally {
+      setVekaletLoading(false);
+    }
+  }
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -446,6 +526,53 @@ export default function AdminKullanicilarIdPage() {
               </CardContent>
             </Card>
 
+            {(profile.role === "il" || profile.role === "deneyap") && (
+              <Card className="overflow-hidden">
+                <div className="h-1 w-full bg-slate-200" />
+                <CardHeader className="flex flex-row items-center justify-between gap-3">
+                  <CardTitle className="text-slate-900">Vekalet Atamaları</CardTitle>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setVekaletOpen(true)}
+                    disabled={vekaletLoading || !profile.bolge}
+                  >
+                    <Plus className="h-4 w-4 mr-2" /> Vekalet Ekle
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {!profile.bolge ? (
+                    <p className="text-sm text-slate-500">Kullanıcının bölge bilgisi olmadığı için vekalet atanamaz.</p>
+                  ) : vekaletLoading ? (
+                    <p className="text-sm text-slate-500">Yükleniyor...</p>
+                  ) : vekaletList.length === 0 ? (
+                    <p className="text-sm text-slate-500">Vekalet ataması yok.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {vekaletList.map((v) => (
+                        <li key={v.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white p-3">
+                          <div className="min-w-0">
+                            <p className="font-medium text-slate-900 truncate">{v.asil_il}</p>
+                            <p className="text-xs text-slate-500">Bölge: {regionToTurkish(v.bolge)}</p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => removeVekalet(v.id)}
+                            disabled={vekaletLoading}
+                          >
+                            Kaldır
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             <Button
               type="submit"
               disabled={saving}
@@ -578,6 +705,44 @@ export default function AdminKullanicilarIdPage() {
           </Card>
         </div>
       </div>
+
+      <Dialog open={vekaletOpen} onOpenChange={setVekaletOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Vekalet Ekle</DialogTitle>
+            <DialogDescription>
+              Kullanıcının bölgesi içinden bir il seçin. Kendi ili hariçtir.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>İl</Label>
+            <Select value={newVekaletIl} onValueChange={setNewVekaletIl}>
+              <SelectTrigger>
+                <SelectValue placeholder="İl seçin" />
+              </SelectTrigger>
+              <SelectContent>
+                {(
+                  (profile.bolge ? (BOLGE_ILLER as Record<string, string[]>)[profile.bolge] ?? [] : [])
+                    .filter((x) => (profile.il ? x !== profile.il : true))
+                    .filter((x) => !vekaletList.some((v) => v.asil_il === x))
+                ).map((il) => (
+                  <SelectItem key={il} value={il}>
+                    {il}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="outline" onClick={() => setVekaletOpen(false)}>
+              İptal
+            </Button>
+            <Button type="button" onClick={addVekalet} disabled={!newVekaletIl || vekaletSaving}>
+              {vekaletSaving ? "Ekleniyor..." : "Ekle"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent className="max-w-md">

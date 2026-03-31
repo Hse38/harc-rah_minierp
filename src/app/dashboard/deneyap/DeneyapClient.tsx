@@ -399,6 +399,11 @@ export function DeneyapClient({
                   <li key={e.id}>
                     <ExpenseCard
                       expense={e}
+                      deputyLabel={
+                        profile?.il && e.il && e.il !== profile.il
+                          ? `Vekaleten · ${e.il}`
+                          : undefined
+                      }
                       actions={
                         (e.status === "pending_bolge" ||
                           e.status === "rejected_bolge" ||

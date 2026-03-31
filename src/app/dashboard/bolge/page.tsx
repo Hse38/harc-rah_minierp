@@ -556,7 +556,10 @@ export default function BolgePage() {
               const hasReceipt = !!e.receipt_url;
               const receiptViewed = receiptViewedIds.has(e.id);
               const buttonsDisabled = hasReceipt && !receiptViewed;
-              const typeIcon = { Ulaşım: "🚗", Konaklama: "🏨", Yemek: "🍽️", Malzeme: "📦", Diğer: "📋" }[e.expense_type] ?? "📋";
+              const typeIcon =
+                ({ Yakıt: "⛽", Ulaşım: "🚗", Konaklama: "🏨", Yemek: "🍽️", Malzeme: "📦", Diğer: "📋" } as Record<string, string>)[
+                  e.expense_type
+                ] ?? "📋";
               return (
                 <Card key={e.id} data-expense-id={e.id} className="overflow-hidden">
                   <CardContent className="p-4 space-y-2.5">
@@ -567,6 +570,16 @@ export default function BolgePage() {
                       </div>
                       <StatusBadge status={e.status} />
                     </div>
+                    {e.manuel_giris && (
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                        ⚠️ Bu harcama manuel girildi. Lütfen fişi kontrol edin.
+                      </div>
+                    )}
+                    {e.eski_fis && (
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                        ⚠️ Bu fiş 2 aydan eski.
+                      </div>
+                    )}
                     <div className="flex items-baseline gap-2">
                       <span className="text-2xl" aria-hidden>{typeIcon}</span>
                       <span className="text-xl font-bold text-slate-800">{formatCurrency(e.amount)}</span>

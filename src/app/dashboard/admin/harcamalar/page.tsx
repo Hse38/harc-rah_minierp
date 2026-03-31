@@ -50,8 +50,48 @@ type ExpenseRow = {
   amount: number;
   status: ExpenseStatus;
   expense_type: string;
+  kategori_detay?: unknown | null;
   created_at: string;
 };
+
+function formatKategoriDetay(expense: ExpenseRow): string | null {
+  const kd = expense.kategori_detay as any;
+  if (!kd || typeof kd !== "object") return null;
+  const amount = Number(expense.amount);
+  const safeDiv = (unit: number) => (unit > 0 ? amount / unit : null);
+
+  if (expense.expense_type === "Yakıt") {
+    const km = Number(kd.km);
+    if (!Number.isFinite(km) || km <= 0) return null;
+    const per = safeDiv(km);
+    return `${km} KM${per ? ` · ${formatCurrency(per)}/km` : ""}`;
+  }
+  if (expense.expense_type === "Yemek") {
+    const kisi = Number(kd.kisi_sayisi);
+    if (!Number.isFinite(kisi) || kisi <= 0) return null;
+    const per = safeDiv(kisi);
+    return `${kisi} kişi${per ? ` · ${formatCurrency(per)}/kişi` : ""}`;
+  }
+  if (expense.expense_type === "Konaklama") {
+    const gece = Number(kd.gece_sayisi);
+    if (!Number.isFinite(gece) || gece <= 0) return null;
+    const per = safeDiv(gece);
+    return `${gece} gece${per ? ` · ${formatCurrency(per)}/gece` : ""}`;
+  }
+  if (expense.expense_type === "Ulaşım") {
+    const tip = kd.tip === "bilet" ? "bilet" : kd.tip === "km" ? "km" : null;
+    const deger = Number(kd.deger);
+    if (!tip || !Number.isFinite(deger) || deger <= 0) return null;
+    const per = safeDiv(deger);
+    const label = tip === "km" ? "KM" : "bilet";
+    return `${deger} ${label}${per ? ` · ${formatCurrency(per)}/${tip}` : ""}`;
+  }
+  if (expense.expense_type === "Diğer") {
+    const a = String(kd.aciklama ?? "").trim();
+    return a ? `Ne için? ${a}` : null;
+  }
+  return null;
+}
 
 export default function AdminHarcamalarPage() {
   useHighlightExpense();
@@ -233,6 +273,9 @@ export default function AdminHarcamalarPage() {
               <p><span className="font-medium">Kişi:</span> {detail.submitter_name}</p>
               <p><span className="font-medium">İl / Bölge:</span> {detail.il ?? "—"} / {detail.bolge ? regionToTurkish(detail.bolge) : "—"}</p>
               <p><span className="font-medium">Tutar:</span> {formatCurrency(detail.amount)}</p>
+              {formatKategoriDetay(detail) && (
+                <p><span className="font-medium">Ek Bilgiler:</span> {formatKategoriDetay(detail)}</p>
+              )}
               <p><span className="font-medium">Durum:</span> <StatusBadge status={detail.status} /></p>
               <p><span className="font-medium">Tarih:</span> {new Date(detail.created_at).toLocaleString("tr-TR")}</p>
             </div>
