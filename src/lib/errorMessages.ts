@@ -95,6 +95,8 @@ export function getUserFriendlyErrorMessage(err: AnyError): string {
 export function getUserFriendlyApiErrorMessage(payload: unknown, fallback?: string): string {
   const p = payload as { error?: unknown } | null;
   const err = p?.error;
+  // If API already returned a user-facing string, prefer it verbatim.
+  if (typeof err === "string" && err.trim()) return err;
   if (err) return getUserFriendlyErrorMessage(err);
   return fallback ?? "Beklenmedik bir hata oluştu. Lütfen tekrar deneyin.";
 }

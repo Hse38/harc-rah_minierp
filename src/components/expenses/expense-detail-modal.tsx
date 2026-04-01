@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/expenses/status-badge";
 import { formatCurrency, formatDate, bolgeAdi } from "@/lib/utils";
+import { OnayTimeline } from "@/components/OnayTimeline";
 
 export function ExpenseDetailModal({
   expense,
@@ -81,6 +82,8 @@ export function ExpenseDetailModal({
               )}
             </div>
           )}
+
+          <OnayTimeline expense={expense} />
         </div>
         {showCloseButton && (
           <DialogFooter>

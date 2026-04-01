@@ -14,6 +14,7 @@ import { StatusBadge } from "@/components/expenses/status-badge";
 import { ReceiptLightbox } from "@/components/expenses/receipt-lightbox";
 import { formatCurrency, formatDate, bolgeAdi } from "@/lib/utils";
 import { ChevronRight, FileImage } from "lucide-react";
+import { OnayTimeline } from "@/components/OnayTimeline";
 
 const STATUS_LABELS: Record<string, string> = {
   pending_bolge: "Bölge Onayı Bekleniyor",
@@ -99,46 +100,7 @@ export function YkExpenseDetailModal({
                 <p>{expense.bolge_note}</p>
               </div>
             )}
-            {/* Onay geçmişi */}
-            <div>
-              <span className="text-slate-500 block mb-2">Onay geçmişi</span>
-              <ul className="space-y-2">
-                <li className="flex items-start gap-2">
-                  <span className="text-slate-400 mt-0.5">•</span>
-                  <div>
-                    <p className="font-medium text-slate-700">Başvuru oluşturuldu</p>
-                    <p className="text-xs text-slate-500">{formatDate(expense.created_at)}</p>
-                  </div>
-                </li>
-                {expense.reviewed_at_bolge && (
-                  <li className="flex items-start gap-2">
-                    <span className="text-slate-400 mt-0.5">•</span>
-                    <div>
-                      <p className="font-medium text-slate-700">Bölge onayı</p>
-                      <p className="text-xs text-slate-500">{formatDate(expense.reviewed_at_bolge)}</p>
-                    </div>
-                  </li>
-                )}
-                {expense.reviewed_at_koord && (
-                  <li className="flex items-start gap-2">
-                    <span className="text-slate-400 mt-0.5">•</span>
-                    <div>
-                      <p className="font-medium text-slate-700">Koordinatör onayı</p>
-                      <p className="text-xs text-slate-500">{formatDate(expense.reviewed_at_koord)}</p>
-                    </div>
-                  </li>
-                )}
-                {expense.status === "paid" && (
-                  <li className="flex items-start gap-2">
-                    <span className="text-slate-400 mt-0.5">•</span>
-                    <div>
-                      <p className="font-medium text-slate-700">Ödendi</p>
-                      <p className="text-xs text-slate-500">{expense.reviewed_at_koord ? formatDate(expense.reviewed_at_koord) : "—"}</p>
-                    </div>
-                  </li>
-                )}
-              </ul>
-            </div>
+            <OnayTimeline expense={expense} />
             {/* Fiş */}
             <div>
               <span className="text-slate-500 block mb-1">Fiş</span>

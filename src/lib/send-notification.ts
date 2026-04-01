@@ -59,9 +59,30 @@ export async function sendNotification({
         if (vapidEmail && vapidPublic && vapidPrivate) {
           webpush.default.setVapidDetails(vapidEmail, vapidPublic, vapidPrivate);
           const subscription = typeof sub === "string" ? JSON.parse(sub) : sub;
+          const isPendingApproval =
+            !!expenseId &&
+            (recipientRole === "bolge" || recipientRole === "koordinator") &&
+            String(message || "").toLowerCase().includes("onay") &&
+            String(message || "").toLowerCase().includes("bekliyor");
+
           await webpush.default.sendNotification(
             subscription,
-            JSON.stringify({ title: pushTitle, body: pushBody, url: pushUrl })
+            JSON.stringify({
+              title: pushTitle,
+              body: pushBody,
+              url: pushUrl,
+              icon: "/icon.svg",
+              badge: "/icon.svg",
+              ...(isPendingApproval
+                ? {
+                    actions: [
+                      { action: "approve", title: "✅ Onayla" },
+                      { action: "view", title: "👁️ Görüntüle" },
+                    ],
+                    data: { expenseId, url: pushUrl },
+                  }
+                : { data: { url: pushUrl } }),
+            })
           );
         }
       } catch (e) {

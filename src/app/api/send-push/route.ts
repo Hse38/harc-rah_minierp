@@ -25,6 +25,10 @@ export async function POST(request: Request) {
       title: string;
       body: string;
       url?: string;
+      actions?: { action: string; title: string }[];
+      data?: Record<string, unknown>;
+      icon?: string;
+      badge?: string;
     };
     console.log("[send-push] incoming payload:", payload);
     const { title, body, url = "/" } = payload;
@@ -74,7 +78,16 @@ export async function POST(request: Request) {
 
     console.log("[send-push] subscription rows:", rows?.length ?? 0, rowsError ?? null);
 
-    const pushPayload = JSON.stringify({ title, body, url, tag: "tamga-notification" });
+    const pushPayload = JSON.stringify({
+      title,
+      body,
+      url,
+      actions: payload.actions,
+      data: payload.data,
+      icon: payload.icon,
+      badge: payload.badge,
+      tag: "tamga-notification",
+    });
     let sent = 0;
     for (const row of rows ?? []) {
       const sub = (row as { subscription: unknown }).subscription;

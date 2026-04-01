@@ -22,6 +22,7 @@ import { BarChart2, List, Plus, Pencil, XCircle, Send } from "lucide-react";
 import { toast } from "sonner";
 import type { DashboardDeneyapResponse } from "@/app/api/dashboard/route";
 import { useHighlightExpense } from "@/lib/use-highlight-expense";
+import { YeniHarcamaFAB } from "@/components/YeniHarcamaFAB";
 
 const DeneyapChart = dynamic(
   () => import("@/components/dashboard/DeneyapChart").then((m) => ({ default: m.DeneyapChart })),
@@ -477,6 +478,8 @@ export function DeneyapClient({
         activeTab={activeTab}
         onTabChange={(id) => id !== "yeni" && setActiveTab(id as "dashboard" | "list")}
       />
+
+      <YeniHarcamaFAB href="/dashboard/deneyap/yeni" />
     </div>
   );
 }

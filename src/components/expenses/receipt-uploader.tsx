@@ -37,7 +37,8 @@ export function ReceiptUploader({
   disabled?: boolean;
 }) {
   const [uploading, setUploading] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -79,30 +80,72 @@ export function ReceiptUploader({
   return (
     <div className="space-y-2">
       <input
-        ref={inputRef}
+        ref={cameraInputRef}
         type="file"
         accept="image/*"
         capture="environment"
         className="hidden"
         onChange={handleFile}
       />
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full h-24 border-2 border-dashed"
-        disabled={disabled || uploading}
-        onClick={() => inputRef.current?.click()}
-      >
-        {uploading ? (
-          <Loader2 className="h-8 w-8 animate-spin text-slate-500" />
-        ) : (
-          <>
-            <Camera className="h-8 w-8 mr-2 text-slate-500" />
-            <span>Fotoğraf çek veya seç</span>
-            <Upload className="h-5 w-5 ml-2 text-slate-400" />
-          </>
-        )}
-      </Button>
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFile}
+      />
+      <div className="grid gap-2 md:gap-0 md:block md:space-y-2">
+        <div className="grid grid-cols-1 gap-2 md:hidden">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full h-14 border-2 border-dashed justify-start"
+            disabled={disabled || uploading}
+            onClick={() => cameraInputRef.current?.click()}
+          >
+            {uploading ? (
+              <Loader2 className="h-5 w-5 animate-spin text-slate-500" />
+            ) : (
+              <>
+                <Camera className="h-5 w-5 mr-2 text-slate-500" />
+                <span>Fotoğraf Çek</span>
+              </>
+            )}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full h-14 border-2 border-dashed justify-start"
+            disabled={disabled || uploading}
+            onClick={() => galleryInputRef.current?.click()}
+          >
+            {uploading ? (
+              <Loader2 className="h-5 w-5 animate-spin text-slate-500" />
+            ) : (
+              <>
+                <Upload className="h-5 w-5 mr-2 text-slate-500" />
+                <span>Galeriden Seç</span>
+              </>
+            )}
+          </Button>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          className="hidden md:flex w-full h-24 border-2 border-dashed"
+          disabled={disabled || uploading}
+          onClick={() => galleryInputRef.current?.click()}
+        >
+          {uploading ? (
+            <Loader2 className="h-8 w-8 animate-spin text-slate-500" />
+          ) : (
+            <>
+              <Upload className="h-8 w-8 mr-2 text-slate-500" />
+              <span>Galeriden Seç</span>
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   );
 }

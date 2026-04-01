@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { notifyApi } from "@/lib/notify-api";
 import { useHighlightExpense } from "@/lib/use-highlight-expense";
 import { ReceiptLightbox } from "@/components/expenses/receipt-lightbox";
+import { useSwipeAction } from "@/hooks/useSwipeAction";
 import {
   Dialog,
   DialogContent,
@@ -39,6 +40,68 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
+
+function SwipePendingCard({
+  expense,
+  buttonsDisabled,
+  actionLoading,
+  onApprove,
+  onWarnApprove,
+  onReject,
+  onOpenReceipt,
+  children,
+}: {
+  expense: Expense;
+  buttonsDisabled: boolean;
+  actionLoading: boolean;
+  onApprove: () => void;
+  onWarnApprove: () => void;
+  onReject: () => void;
+  onOpenReceipt: () => void;
+  children: React.ReactNode;
+}) {
+  const [animatingOut, setAnimatingOut] = useState(false);
+  const canSwipe = !actionLoading && !buttonsDisabled;
+  const { dx, swipeStyle, handlers } = useSwipeAction({
+    disabled: !canSwipe,
+    thresholdPx: 80,
+    onTrigger: (side) => {
+      if (side === "right") {
+        setAnimatingOut(true);
+        onApprove();
+      } else {
+        onReject();
+      }
+    },
+  });
+
+  return (
+    <div className="relative md:hidden">
+      {/* swipe backgrounds */}
+      <div className="absolute inset-0 flex items-stretch rounded-xl overflow-hidden">
+        <div className="flex-1 bg-green-600/15 flex items-center pl-4 text-green-700 text-sm font-medium">
+          ✅ Onayla
+        </div>
+        <div className="flex-1 bg-red-600/15 flex items-center justify-end pr-4 text-red-700 text-sm font-medium">
+          ❌ Reddet
+        </div>
+      </div>
+
+      <div
+        {...handlers}
+        style={swipeStyle}
+        className={
+          "relative transition-transform duration-200 " +
+          (animatingOut ? "translate-x-full opacity-0" : "")
+        }
+      >
+        {children}
+      </div>
+      {/* desktop fallback (keep original UI) */}
+      <div className="hidden md:block">{children}</div>
+    </div>
+  );
+}
 
 type PeriodFilter = "weekly" | "monthly" | "yearly";
 
@@ -561,8 +624,18 @@ export default function BolgePage() {
                   e.expense_type
                 ] ?? "📋";
               return (
-                <Card key={e.id} data-expense-id={e.id} className="overflow-hidden">
-                  <CardContent className="p-4 space-y-2.5">
+                <SwipePendingCard
+                  key={e.id}
+                  expense={e}
+                  buttonsDisabled={buttonsDisabled}
+                  actionLoading={actionLoading}
+                  onApprove={() => handleApprove(e)}
+                  onWarnApprove={() => setWarnModal(e)}
+                  onReject={() => setRejectModal({ id: e.id, num: e.expense_number })}
+                  onOpenReceipt={() => setReceiptModal({ url: e.receipt_url!, expenseId: e.id, bolgeNote: e.bolge_note || null })}
+                >
+                  <Card data-expense-id={e.id} className="overflow-hidden">
+                    <CardContent className="p-4 space-y-2.5">
                     <div className="flex justify-between items-start gap-2">
                       <div>
                         <p className="text-lg font-semibold text-slate-800">{e.submitter_name}</p>
@@ -636,8 +709,9 @@ export default function BolgePage() {
                         Reddet
                       </Button>
                     </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </SwipePendingCard>
               );
             })
           )}

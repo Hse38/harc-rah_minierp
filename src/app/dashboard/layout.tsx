@@ -8,6 +8,7 @@ import { AnnouncementBanner } from "@/components/layout/announcement-banner";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AnnouncementsProvider } from "@/contexts/AnnouncementsContext";
 import type { Language } from "@/lib/i18n";
+import { KeyboardShortcutsRoot } from "@/components/KeyboardShortcutsRoot";
 
 function isNextRedirect(e: unknown): boolean {
   return !!(
@@ -74,6 +75,7 @@ export default async function DashboardLayout({
               <AnnouncementBanner />
               <div className="flex-1">{children}</div>
             </main>
+            <KeyboardShortcutsRoot role={role as any} />
           </div>
         </AnnouncementsProvider>
       </div>

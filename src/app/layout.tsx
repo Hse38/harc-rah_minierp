@@ -8,6 +8,7 @@ const LOGO_URL = "https://raw.githubusercontent.com/Hse38/t3logo/main/1.T3%20dik
 export const metadata: Metadata = {
   title: "TAMGA",
   description: "TAMGA Onay ve Ödeme Yönetimi",
+  manifest: "/api/manifest",
   icons: {
     icon: [{ url: LOGO_URL, type: "image/png" }, { url: LOGO_URL, sizes: "32x32", type: "image/png" }],
     apple: LOGO_URL,

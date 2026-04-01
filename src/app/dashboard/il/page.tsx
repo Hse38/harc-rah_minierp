@@ -15,6 +15,7 @@ import type { ExpenseStatus } from "@/types";
 import { BarChart2, List, Plus } from "lucide-react";
 import { useHighlightExpense } from "@/lib/use-highlight-expense";
 import { useInfiniteExpenses } from "@/lib/use-infinite-expenses";
+import { YeniHarcamaFAB } from "@/components/YeniHarcamaFAB";
 import {
   BarChart,
   Bar,
@@ -296,6 +297,8 @@ export default function IlPage() {
         activeTab={activeTab}
         onTabChange={(tab) => tab !== "yeni" && setActiveTab(tab as "dashboard" | "list")}
       />
+
+      <YeniHarcamaFAB href="/dashboard/il/yeni" />
     </div>
   );
 }

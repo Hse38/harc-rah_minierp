@@ -7,6 +7,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { FileImage, Receipt, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ReceiptLightbox } from "@/components/expenses/receipt-lightbox";
+import { ExpenseContextMenu } from "@/components/ExpenseContextMenu";
 
 const TYPE_ICONS: Record<string, string> = {
   Yakıt: "⛽",
@@ -163,7 +164,9 @@ export function ExpenseCard({
   if (href) {
     return (
       <>
-        <Link href={href}>{content}</Link>
+        <ExpenseContextMenu expense={expense} detailUrl={href}>
+          <Link href={href}>{content}</Link>
+        </ExpenseContextMenu>
         {expense.receipt_url && (
           <ReceiptLightbox
             open={receiptOpen}
@@ -177,7 +180,7 @@ export function ExpenseCard({
   }
   return (
     <>
-      {content}
+      <ExpenseContextMenu expense={expense}>{content}</ExpenseContextMenu>
       {expense.receipt_url && (
         <ReceiptLightbox
           open={receiptOpen}

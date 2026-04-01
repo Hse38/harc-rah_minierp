@@ -75,6 +75,16 @@ export default function DeneyapYeniPage() {
   const [kategoriDetay, setKategoriDetay] = useState<KategoriDetay>({});
   const [kategoriDetayErrors, setKategoriDetayErrors] =
     useState<KategoriDetayErrors>({});
+  const [lastTemplate, setLastTemplate] = useState<{
+    expense_type: ExpenseType;
+    amount: number;
+    description: string | null;
+    kategori_detay: unknown | null;
+  } | null>(null);
+  const [templateDismissed, setTemplateDismissed] = useState(false);
+  const [draftBanner, setDraftBanner] = useState<"hidden" | "visible">("visible");
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [draftLoadedOnce, setDraftLoadedOnce] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -107,9 +117,103 @@ export default function DeneyapYeniPage() {
           .filter(Boolean);
         setVekaletIller(Array.from(new Set(list)));
       }
+
+      // Quick template: most recent expense
+      if (pr?.id) {
+        const { data: last } = await supabase
+          .from("expenses")
+          .select("expense_type, amount, description, kategori_detay")
+          .eq("submitter_id", pr.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const row = last as
+          | { expense_type?: ExpenseType; amount?: number; description?: string | null; kategori_detay?: unknown | null }
+          | null;
+        if (row?.expense_type && typeof row.amount === "number") {
+          setLastTemplate({
+            expense_type: row.expense_type,
+            amount: row.amount,
+            description: row.description ?? "",
+            kategori_detay: row.kategori_detay ?? null,
+          });
+        }
+      }
+
+      // Draft: load if exists
+      if (pr?.id) {
+        const { data: draft } = await supabase
+          .from("expense_drafts")
+          .select("id, form_data")
+          .eq("user_id", pr.id)
+          .maybeSingle();
+        const d = draft as { id?: string; form_data?: any } | null;
+        if (d?.id && d?.form_data) {
+          setDraftId(String(d.id));
+        }
+      }
       setLoading(false);
     })();
   }, [supabase, router]);
+
+  async function saveDraft(silent: boolean) {
+    if (!profile?.id) return;
+    const payload = {
+      iban: form.iban ?? "",
+      expense_type: form.expense_type,
+      amount: form.amount ?? "",
+      description: form.description ?? "",
+      il: selectedIl ?? profile.il ?? null,
+      kategori_detay: kategoriDetay ?? {},
+    };
+    const { error } = await supabase.from("expense_drafts").upsert(
+      {
+        user_id: profile.id,
+        form_data: payload,
+      },
+      { onConflict: "user_id" }
+    );
+    if (!error && !silent) toast.success("Taslak kaydedildi");
+  }
+
+  async function deleteDraft() {
+    if (!profile?.id) return;
+    await supabase.from("expense_drafts").delete().eq("user_id", profile.id);
+    setDraftId(null);
+    setDraftBanner("hidden");
+  }
+
+  async function loadDraft() {
+    if (!profile?.id) return;
+    const { data } = await supabase
+      .from("expense_drafts")
+      .select("form_data")
+      .eq("user_id", profile.id)
+      .maybeSingle();
+    const fd = (data as { form_data?: any } | null)?.form_data;
+    if (!fd) return;
+    setForm((f) => ({
+      ...f,
+      iban: String(fd.iban ?? f.iban ?? ""),
+      expense_type: (fd.expense_type as ExpenseType) ?? f.expense_type,
+      amount: String(fd.amount ?? ""),
+      description: String(fd.description ?? ""),
+    }));
+    if (fd.il) setSelectedIl(String(fd.il));
+    setKategoriDetay((fd.kategori_detay && typeof fd.kategori_detay === "object" ? fd.kategori_detay : {}) as KategoriDetay);
+    setDraftLoadedOnce(true);
+    setDraftBanner("hidden");
+  }
+
+  // autosave every 30s (silent)
+  useEffect(() => {
+    if (!profile?.id) return;
+    const t = window.setInterval(() => {
+      void saveDraft(true);
+    }, 30000);
+    return () => window.clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id, form, kategoriDetay, selectedIl]);
 
   function parseReceiptDate(input?: string): Date | null {
     if (!input) return null;
@@ -277,6 +381,8 @@ export default function DeneyapYeniPage() {
       toast.success(
         `${expenseNumber} gönderildi, bölge sorumlusunun onayı bekleniyor.`
       );
+      // on success, remove draft
+      await supabase.from("expense_drafts").delete().eq("user_id", profile.id);
       window.location.href = "/dashboard/deneyap";
       return;
     } catch (err: unknown) {
@@ -319,6 +425,68 @@ export default function DeneyapYeniPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {draftBanner === "visible" && draftId && (
+          <div className="rounded-lg border border-slate-200 bg-white p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="font-semibold">📝 Kayıtlı taslağınız var</div>
+                <div className="mt-1 text-sm text-slate-600">Devam etmek ister misiniz?</div>
+              </div>
+              <Button type="button" variant="ghost" size="sm" onClick={() => setDraftBanner("hidden")}>
+                Kapat
+              </Button>
+            </div>
+            <div className="mt-3 flex gap-2">
+              <Button type="button" onClick={() => void loadDraft()} disabled={submitting}>
+                Devam Et
+              </Button>
+              <Button type="button" variant="outline" onClick={() => void deleteDraft()} disabled={submitting}>
+                Sil
+              </Button>
+            </div>
+          </div>
+        )}
+        {!templateDismissed && lastTemplate && (
+          <div className="rounded-lg border border-[#2563EB]/20 bg-[#2563EB]/5 p-4 text-slate-800">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="font-semibold">⚡ Geçen seferki gibi doldur</div>
+                <div className="mt-1 text-sm text-slate-600">
+                  {lastTemplate.expense_type} · {formatCurrency(lastTemplate.amount)}
+                  {lastTemplate.description ? ` · “${String(lastTemplate.description).slice(0, 40)}”` : ""}
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setTemplateDismissed(true)}
+              >
+                Kapat
+              </Button>
+            </div>
+            <div className="mt-3 flex gap-2">
+              <Button
+                type="button"
+                onClick={() => {
+                  setForm((f) => ({
+                    ...f,
+                    expense_type: lastTemplate.expense_type,
+                    amount: String(lastTemplate.amount),
+                    description: String(lastTemplate.description ?? ""),
+                  }));
+                  setKategoriDetay(
+                    (lastTemplate.kategori_detay && typeof lastTemplate.kategori_detay === "object"
+                      ? (lastTemplate.kategori_detay as KategoriDetay)
+                      : {}) as KategoriDetay
+                  );
+                }}
+              >
+                Kullan
+              </Button>
+            </div>
+          </div>
+        )}
         {oldReceiptNeedsConfirm && !oldReceiptConfirmed && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900">
             <div className="font-medium">
@@ -538,13 +706,24 @@ export default function DeneyapYeniPage() {
           </div>
         </div>
 
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={submitting || !receiptUrl}
-        >
-          {submitting ? "Gönderiliyor..." : "Gönder"}
-        </Button>
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            disabled={submitting}
+            onClick={() => void saveDraft(false)}
+          >
+            Taslak Kaydet
+          </Button>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={submitting || !receiptUrl}
+          >
+            {submitting ? "Gönderiliyor..." : "Gönder"}
+          </Button>
+        </div>
       </form>
     </div>
   );
