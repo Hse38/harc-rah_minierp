@@ -13,6 +13,36 @@ function asCode(err: AnyError): string {
   return code == null ? "" : String(code);
 }
 
+function asDetails(err: AnyError): string {
+  if (!err || typeof err !== "object") return "";
+  const details = (err as { details?: unknown }).details;
+  return details == null ? "" : String(details);
+}
+
+export function logRawError(error: AnyError, context?: string) {
+  if (process.env.NODE_ENV !== "development") return;
+  // eslint-disable-next-line no-console
+  console.error("RAW ERROR:", context ? `[${context}]` : "", error);
+  // eslint-disable-next-line no-console
+  console.error("RAW ERROR CODE:", (error as { code?: unknown } | null)?.code);
+  // eslint-disable-next-line no-console
+  console.error("RAW ERROR MESSAGE:", (error as { message?: unknown } | null)?.message);
+  // eslint-disable-next-line no-console
+  console.error("RAW ERROR DETAILS:", (error as { details?: unknown } | null)?.details);
+}
+
+export function getDevErrorText(error: AnyError): string {
+  const msg = asMessage(error);
+  const code = asCode(error);
+  const details = asDetails(error);
+  const parts = [
+    code ? `code=${code}` : "",
+    msg ? `message=${msg}` : "",
+    details ? `details=${details}` : "",
+  ].filter(Boolean);
+  return parts.join(" | ");
+}
+
 export function getUserFriendlyErrorMessage(err: AnyError): string {
   const msg = asMessage(err);
   const code = asCode(err);

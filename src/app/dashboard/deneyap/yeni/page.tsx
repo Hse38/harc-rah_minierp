@@ -25,7 +25,12 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { notifyApi } from "@/lib/notify-api";
 import { PROFILE_FIELDS_FORM } from "@/lib/expense-fields";
 import { formatCurrency } from "@/lib/utils";
-import { getUserFriendlyErrorMessage, getUserFriendlyApiErrorMessage } from "@/lib/errorMessages";
+import {
+  getUserFriendlyErrorMessage,
+  getUserFriendlyApiErrorMessage,
+  getDevErrorText,
+  logRawError,
+} from "@/lib/errorMessages";
 import {
   KategoriEkAlanlari,
   type KategoriDetay,
@@ -236,7 +241,16 @@ export default function DeneyapYeniPage() {
         | { error?: string };
 
       if (!res.ok) {
-        toast.error(getUserFriendlyApiErrorMessage(payload, "Kayıt oluşturulamadı."));
+        if (process.env.NODE_ENV === "development") {
+          // eslint-disable-next-line no-console
+          console.error("RAW API ERROR PAYLOAD:", payload);
+        }
+        toast.error(getUserFriendlyApiErrorMessage(payload, "Kayıt oluşturulamadı."), {
+          description:
+            process.env.NODE_ENV === "development"
+              ? getDevErrorText((payload as { error?: unknown; code?: unknown; details?: unknown } | null)?.error ?? payload)
+              : undefined,
+        });
         return;
       }
 
@@ -261,7 +275,10 @@ export default function DeneyapYeniPage() {
       window.location.href = "/dashboard/deneyap";
       return;
     } catch (err: unknown) {
-      toast.error(getUserFriendlyErrorMessage(err));
+      logRawError(err, "DeneyapYeniPage.handleSubmit");
+      toast.error(getUserFriendlyErrorMessage(err), {
+        description: process.env.NODE_ENV === "development" ? getDevErrorText(err) : undefined,
+      });
     } finally {
       setSubmitting(false);
     }

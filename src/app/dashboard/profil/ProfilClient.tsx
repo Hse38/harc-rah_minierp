@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, LogOut } from "lucide-react";
 import { toast } from "sonner";
-import { getUserFriendlyErrorMessage } from "@/lib/errorMessages";
+import { getUserFriendlyErrorMessage, getDevErrorText, logRawError } from "@/lib/errorMessages";
 import { cn } from "@/lib/utils";
 import { PROFILE_LANGUAGE_OPTIONS, PROFILE_LANG_STORAGE_KEY } from "@/lib/i18n/profile";
 import { useLang } from "@/contexts/LanguageContext";
@@ -148,7 +148,10 @@ export function ProfilClient({
           password: newPassword,
         });
         if (error) {
-          toast.error(getUserFriendlyErrorMessage(error));
+          logRawError(error, "ProfilClient.updateUserPassword");
+          toast.error(getUserFriendlyErrorMessage(error), {
+            description: process.env.NODE_ENV === "development" ? getDevErrorText(error) : undefined,
+          });
           setSaving(false);
           return;
         }

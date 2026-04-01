@@ -22,7 +22,7 @@ import type { ReceiptAnalysis } from "@/types";
 import type { Profile } from "@/types";
 import type { Expense } from "@/types";
 import { toast } from "sonner";
-import { getUserFriendlyErrorMessage } from "@/lib/errorMessages";
+import { getUserFriendlyErrorMessage, getDevErrorText, logRawError } from "@/lib/errorMessages";
 import { ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { notifyApi } from "@/lib/notify-api";
 import { EXPENSE_FIELDS_FULL, PROFILE_FIELDS_FORM } from "@/lib/expense-fields";
@@ -182,7 +182,10 @@ export default function DeneyapDuzenlePage() {
       router.push("/dashboard/deneyap");
       router.refresh();
     } catch (err: unknown) {
-      toast.error(getUserFriendlyErrorMessage(err) || "Kayıt güncellenemedi.");
+      logRawError(err, "DeneyapDuzenlePage.handleSubmit");
+      toast.error(getUserFriendlyErrorMessage(err) || "Kayıt güncellenemedi.", {
+        description: process.env.NODE_ENV === "development" ? getDevErrorText(err) : undefined,
+      });
     } finally {
       setSubmitting(false);
     }
