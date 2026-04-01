@@ -44,6 +44,7 @@ type UserRow = {
   il: string | null;
   bolge: string | null;
   last_sign_in_at: string | null;
+  izin_modu?: boolean;
 };
 
 function formatDate(s: string | null): string {
@@ -142,6 +143,7 @@ export default function AdminKullanicilarPage() {
                   <th className="text-left p-3 font-medium text-slate-700">Rol</th>
                   <th className="text-left p-3 font-medium text-slate-700">İl</th>
                   <th className="text-left p-3 font-medium text-slate-700">Bölge</th>
+                  <th className="text-left p-3 font-medium text-slate-700">Durum</th>
                   <th className="text-left p-3 font-medium text-slate-700">Son Giriş</th>
                   <th className="text-left p-3 font-medium text-slate-700">Aksiyon</th>
                 </tr>
@@ -156,6 +158,15 @@ export default function AdminKullanicilarPage() {
                     </td>
                     <td className="p-3 text-slate-600">{u.il || "—"}</td>
                     <td className="p-3 text-slate-600">{u.bolge ? regionToTurkish(u.bolge) : "—"}</td>
+                    <td className="p-3">
+                      {u.role === "bolge" && u.izin_modu ? (
+                        <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
+                          🏖️ İzin modu
+                        </span>
+                      ) : (
+                        <span className="text-xs text-slate-400">—</span>
+                      )}
+                    </td>
                     <td className="p-3 text-slate-500 text-xs">{formatDate(u.last_sign_in_at)}</td>
                     <td className="p-3">
                       <Link href={`/dashboard/admin/kullanicilar/${u.id}`}>

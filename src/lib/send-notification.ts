@@ -79,7 +79,10 @@ export async function sendNotificationToRole(
 ): Promise<void> {
   console.log("[sendNotificationToRole] role:", role, "params:", params);
 
-  let query = supabaseAdmin.from("profiles").select("id").eq("role", role);
+  let query = supabaseAdmin
+    .from("profiles")
+    .select("id, role, bolge, izin_modu, izin_vekil_id, izin_baslangic, izin_bitis")
+    .eq("role", role);
   if (role === "bolge" && params.bolge) {
     query = query.eq("bolge", params.bolge);
   }
@@ -93,12 +96,36 @@ export async function sendNotificationToRole(
 
   const { bolge: _b, ...rest } = params;
   console.log("[sendNotificationToRole] kullanıcı sayısı:", users?.length ?? 0);
-  for (const user of users ?? []) {
-    console.log("[sendNotificationToRole] push gönderiliyor kullanıcı:", user.id);
+  const now = new Date();
+  const inRange = (start?: string | null, end?: string | null) => {
+    const s = start ? new Date(start) : null;
+    const e = end ? new Date(end) : null;
+    if (s && now < s) return false;
+    if (e && now > e) return false;
+    return true;
+  };
+
+  for (const user of (users ?? []) as any[]) {
+    const isBolgeIzin = role === "bolge" && !!user?.izin_modu && inRange(user?.izin_baslangic ?? null, user?.izin_bitis ?? null);
+    const vekilId = typeof user?.izin_vekil_id === "string" ? user.izin_vekil_id : null;
+    const targetId = isBolgeIzin && vekilId ? vekilId : user.id;
+
+    console.log("[sendNotificationToRole] push gönderiliyor kullanıcı:", { original: user.id, targetId, isBolgeIzin });
     await sendNotification({
       ...rest,
-      recipientId: user.id,
+      recipientId: targetId,
       recipientRole: role,
     });
+
+    // expense-side visibility (best-effort)
+    if (isBolgeIzin && vekilId && rest.expenseId) {
+      await supabaseAdmin
+        .from("expenses")
+        .update({
+          bolge_warning: true,
+          bolge_note: "Bölge sorumlusu izin modunda olduğu için vekile yönlendirildi.",
+        })
+        .eq("id", rest.expenseId);
+    }
   }
 }

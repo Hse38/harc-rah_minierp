@@ -9,6 +9,7 @@ export async function GET(request: Request) {
   const admin = createAdminClient();
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status") ?? "";
+  const archived = (searchParams.get("archived") ?? "").toLowerCase(); // "", "only", "include"
   const bolge = searchParams.get("bolge") ?? "";
   const il = searchParams.get("il") ?? "";
   const q = searchParams.get("q") ?? "";
@@ -20,6 +21,8 @@ export async function GET(request: Request) {
   const ascending = searchParams.get("order") === "asc";
 
   let query = admin.from("expenses").select(EXPENSE_FIELDS_FULL);
+  if (archived === "only") query = query.not("archived_at", "is", null);
+  else if (archived !== "include") query = query.is("archived_at", null);
   if (status) query = query.eq("status", status);
   if (bolge) query = query.eq("bolge", bolge);
   if (il) query = query.eq("il", il);

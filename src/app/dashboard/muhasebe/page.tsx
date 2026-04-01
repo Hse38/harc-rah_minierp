@@ -129,6 +129,7 @@ export default function MuhasebePage() {
       .from("expenses")
       .select(EXPENSE_FIELDS_FULL)
       .in("status", ["approved_koord", "paid"])
+      .is("archived_at", null)
       .order("created_at", { ascending: false });
     setExpenses((data ?? []) as Expense[]);
     setLoading(false);
@@ -249,31 +250,48 @@ export default function MuhasebePage() {
     setConfirmBulkAwaiting(false);
     setConfirmBulkExport(false);
     try {
-      for (const id of toMark) {
-        const expense = expenses.find((x) => x.id === id);
-        if (!expense) continue;
-        await supabase.from("expenses").update({ status: "paid" }).eq("id", id);
-        fetch("/api/system-log", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "expense_approved",
-            target_type: "expense",
-            target_id: expense.id,
-            details: { expense_number: expense.expense_number, amount: expense.amount, by: "muhasebe_paid" },
-          }),
-        }).catch(() => {});
-        // Personele bildirim: ödeme yapıldı
-        notifyApi({
-          recipientId: expense.submitter_id,
-          recipientRole: (expense as any).submitter_role ?? "deneyap",
-          expenseId: expense.id,
-          message: `[${expense.expense_number}] ödemeniz gerçekleşti.`,
-          pushTitle: "TAMGA - Ödeme Yapıldı 🎉",
-          pushBody: `${expense.expense_number} numaralı harcamanız ödendi`,
-          pushUrl: "/dashboard/deneyap",
-        });
-      }
+      const expenseById = new Map(expenses.map((e) => [e.id, e]));
+
+      const { error } = await supabase
+        .from("expenses")
+        .update({ status: "paid" })
+        .in("id", toMark);
+      if (error) throw error;
+
+      const toNotify = toMark
+        .map((id) => expenseById.get(id))
+        .filter(Boolean) as Expense[];
+
+      await Promise.all(
+        toNotify.flatMap((expense) => [
+          fetch("/api/system-log", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "expense_approved",
+              target_type: "expense",
+              target_id: expense.id,
+              details: {
+                expense_number: expense.expense_number,
+                amount: expense.amount,
+                by: "muhasebe_paid",
+              },
+            }),
+          }).catch(() => {}),
+          // Personele bildirim: ödeme yapıldı
+          Promise.resolve(
+            notifyApi({
+              recipientId: expense.submitter_id,
+              recipientRole: (expense as any).submitter_role ?? "deneyap",
+              expenseId: expense.id,
+              message: `[${expense.expense_number}] ödemeniz gerçekleşti.`,
+              pushTitle: "TAMGA - Ödeme Yapıldı 🎉",
+              pushBody: `${expense.expense_number} numaralı harcamanız ödendi`,
+              pushUrl: "/dashboard/deneyap",
+            })
+          ),
+        ])
+      );
       setExpenses((prev) =>
         prev.map((e) => (toMark.includes(e.id) ? { ...e, status: "paid" as const } : e))
       );

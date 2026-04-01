@@ -11,7 +11,9 @@ export async function GET(request: Request) {
   const bolge = searchParams.get("bolge") ?? "";
   const q = searchParams.get("q") ?? "";
 
-  let query = admin.from("profiles").select("id, full_name, role, il, bolge, phone, created_at");
+  let query = admin
+    .from("profiles")
+    .select("id, full_name, role, il, bolge, phone, created_at, izin_modu, izin_vekil_id, izin_baslangic, izin_bitis");
   if (role) query = query.eq("role", role);
   if (bolge) query = query.eq("bolge", bolge);
   const { data: profilesData, error } = await query.order("full_name");

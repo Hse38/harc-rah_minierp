@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useExpensesRealtime } from "@/lib/realtime-expenses";
@@ -14,6 +14,7 @@ import { EXPENSE_FIELDS_FULL } from "@/lib/expense-fields";
 import type { ExpenseStatus } from "@/types";
 import { BarChart2, List, Plus } from "lucide-react";
 import { useHighlightExpense } from "@/lib/use-highlight-expense";
+import { useInfiniteExpenses } from "@/lib/use-infinite-expenses";
 import {
   BarChart,
   Bar,
@@ -28,6 +29,8 @@ import {
 } from "recharts";
 
 const PIE_COLORS = ["#2563EB", "#22C55E", "#EAB308", "#F97316", "#64748B"];
+const EXPENSE_FIELDS_DASH_SMALL =
+  "id,expense_number,submitter_id,submitter_name,il,expense_type,amount,status,created_at";
 
 export default function IlPage() {
   const supabase = createClient();
@@ -67,9 +70,10 @@ export default function IlPage() {
     if (!il) return;
     const { data } = await supabase
       .from("expenses")
-      .select(EXPENSE_FIELDS_FULL)
+      .select(EXPENSE_FIELDS_DASH_SMALL)
       .eq("il", il)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(200);
     setExpenses((data ?? []) as Expense[]);
     setLoading(false);
   }, [il, supabase]);
@@ -83,6 +87,30 @@ export default function IlPage() {
     filter: il ? { column: "il", value: il } : undefined,
     refetch,
   });
+
+  const {
+    items: listExpenses,
+    hasMore,
+    loading: listLoading,
+    loadingMore,
+    loadMore,
+    error: listError,
+  } = useInfiniteExpenses<Expense>({ scope: "il", limit: 20 });
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el) return;
+    if (!hasMore) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) loadMore();
+      },
+      { rootMargin: "800px" }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [hasMore, loadMore]);
 
   const now = new Date();
   const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -219,13 +247,21 @@ export default function IlPage() {
 
         {activeTab === "list" && (
           <div className="space-y-3">
-            {expenses.length === 0 ? (
+            {listLoading ? (
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-slate-500 shadow-sm">
+                Yükleniyor...
+              </div>
+            ) : listError ? (
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-slate-600 shadow-sm">
+                Liste yüklenemedi.
+              </div>
+            ) : listExpenses.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-slate-500 shadow-sm">
                 Bu ile ait harcama kaydı yok.
               </div>
             ) : (
               <ul className="space-y-3">
-                {expenses.map((e) => (
+                {listExpenses.map((e) => (
                   <li key={e.id}>
                     <ExpenseCard
                       expense={e}
@@ -238,6 +274,13 @@ export default function IlPage() {
                     />
                   </li>
                 ))}
+                {hasMore && (
+                  <li>
+                    <div ref={loadMoreRef} className="py-6 text-center text-sm text-slate-500">
+                      {loadingMore ? "Yükleniyor..." : "Daha fazla yükleniyor..."}
+                    </div>
+                  </li>
+                )}
               </ul>
             )}
           </div>

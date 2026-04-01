@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ReceiptLightbox } from "@/components/expenses/receipt-lightbox";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { FileImage, Loader2 } from "lucide-react";
+import Image from "next/image";
 
 type ReceiptRow = {
   id: string;
@@ -84,12 +85,16 @@ export default function AdminFisArsiviPage() {
                     return (
                       <div key={r.id} className="rounded-xl border border-slate-200 bg-white p-3">
                         <div className="flex items-start gap-3">
-                          <img
-                            src={r.receipt_url}
-                            alt="Fiş"
-                            className="h-16 w-16 rounded-lg border object-cover bg-slate-50"
-                            loading="lazy"
-                          />
+                          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border bg-slate-50">
+                            <Image
+                              src={r.receipt_url}
+                              alt="Fiş"
+                              width={64}
+                              height={64}
+                              className="h-16 w-16 object-cover"
+                              sizes="64px"
+                            />
+                          </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-semibold text-slate-900">{r.expense_number}</span>

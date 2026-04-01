@@ -1,0 +1,7 @@
+{
+  "crons": [
+    { "path": "/api/cron/aylik-ozet", "schedule": "0 8 1 * *" },
+    { "path": "/api/cron/hatirlatma", "schedule": "0 9 * * *" }
+  ]
+}
+

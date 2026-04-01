@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useExpensesRealtime } from "@/lib/realtime-expenses";
@@ -16,6 +16,8 @@ import { YkExpenseDetailModal } from "@/components/expenses/yk-expense-detail-mo
 import { BOLGELER_YK, BOLGE_ILLER } from "@/lib/bolge-iller";
 import { REGION_LIMIT_SLUGS, regionToSlug } from "@/lib/region-names";
 import { bolgeAdi, cn, formatCurrency, formatDate } from "@/lib/utils";
+import { useInfiniteExpenses } from "@/lib/use-infinite-expenses";
+import { ButceGerceklesenChart, type ButceGerceklesenRow } from "@/components/ButceGerceklesenChart";
 import {
   Select,
   SelectContent,
@@ -43,7 +45,6 @@ import { LayoutDashboard, MapPin, List, TrendingUp, TrendingDown, ChevronDown, C
 /** Tüm bölgeler (Bölgeler sekmesinde hepsini göstermek için) */
 const TUM_BOLGE_SLUGS = [...REGION_LIMIT_SLUGS];
 import { DASHBOARD_COLORS, CHART_COLORS, formatCurrencyTR } from "@/lib/dashboard-theme";
-import { EXPENSE_FIELDS_FULL } from "@/lib/expense-fields";
 import TurkiyeHaritasi from "@/components/dashboard/TurkiyeHaritasi";
 import Link from "next/link";
 import { useHighlightExpense } from "@/lib/use-highlight-expense";
@@ -87,8 +88,7 @@ function getPeriodRange(period: TimeFilter): { start: Date; end: Date } | null {
 export default function YkPage() {
   const supabase = createClient();
   const highlight = useHighlightExpense();
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [loading, setLoading] = useState(true);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [activeTab, setActiveTab] = useState<YkTab>("genel");
   const [receiptLightbox, setReceiptLightbox] = useState<{ url: string; bolgeNote: string | null } | null>(null);
   const searchParams = useSearchParams();
@@ -117,6 +117,42 @@ export default function YkPage() {
   const [sortBy, setSortBy] = useState<"date" | "amount" | "status" | "name">("date");
   const [sortAsc, setSortAsc] = useState(false);
   const [regionLimits, setRegionLimits] = useState<Record<string, number>>({});
+  const [butceData, setButceData] = useState<ButceGerceklesenRow[] | null>(null);
+
+  const {
+    items: expenses,
+    hasMore,
+    loading,
+    loadingMore,
+    loadMore,
+    reload,
+  } = useInfiniteExpenses<Expense>({
+    scope: "yk",
+    limit: 20,
+    bolge: filterBolge !== "all" ? filterBolge : null,
+    il: filterIl !== "all" ? filterIl : null,
+    statuses: filterStatuses,
+    types: filterTypes,
+    q: personelSearch.trim() || undefined,
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
+    amountMin: amountMin.trim() ? Number(amountMin.replace(",", ".")) : null,
+    amountMax: amountMax.trim() ? Number(amountMax.replace(",", ".")) : null,
+  });
+
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el) return;
+    if (!hasMore) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) loadMore();
+      },
+      { rootMargin: "800px" }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [hasMore, loadMore]);
 
   const periodRange = useMemo(() => getPeriodRange(timeFilter), [timeFilter]);
 
@@ -434,20 +470,7 @@ export default function YkPage() {
     [expenses]
   );
 
-  const refetch = useCallback(async () => {
-    const { data } = await supabase
-      .from("expenses")
-      .select(EXPENSE_FIELDS_FULL)
-      .order("created_at", { ascending: false });
-    setExpenses((data ?? []) as Expense[]);
-    setLoading(false);
-  }, [supabase]);
-
-  useEffect(() => {
-    refetch();
-  }, [refetch]);
-
-  useExpensesRealtime(supabase, { filter: null, refetch });
+  useExpensesRealtime(supabase, { filter: null, refetch: reload });
 
   useEffect(() => {
     const fetchLimits = async () => {
@@ -460,6 +483,19 @@ export default function YkPage() {
     };
     fetchLimits();
   }, [supabase]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/butce-gerceklesen");
+        const json = (await res.json().catch(() => null)) as ButceGerceklesenRow[] | null;
+        if (!res.ok) return;
+        if (Array.isArray(json)) setButceData(json);
+      } catch {
+        // ignore
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     if (filterBolge === "all") return;
@@ -529,6 +565,17 @@ export default function YkPage() {
               <MetricCard title="Ödenen Toplam (₺)" value={formatCurrency(paidTotal)} borderColor="purple" />
               <MetricCard title="Ortalama Harcama (₺)" value={formatCurrency(avgAmount)} borderColor="warning" />
             </div>
+
+            {butceData && (
+              <Card className="rounded-2xl shadow-sm border border-slate-100 bg-white">
+                <CardContent className="p-4 md:p-5">
+                  <h3 className="text-sm md:text-[14px] font-semibold text-[#374151] mb-3">
+                    Bütçe / Gerçekleşen Karşılaştırması
+                  </h3>
+                  <ButceGerceklesenChart data={butceData} />
+                </CardContent>
+              </Card>
+            )}
 
             {monthlyTrendData.some((d) => d.toplam > 0) && (
               <Card className="rounded-2xl shadow-sm border-gray-200 overflow-hidden">

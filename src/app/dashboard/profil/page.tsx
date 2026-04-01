@@ -5,7 +5,7 @@ import { DEFAULT_NOTIFICATION_PREFS } from "@/types";
 import { ProfilClient } from "./ProfilClient";
 
 const PROFILE_SELECT =
-  "id,full_name,iban,role,il,bolge,phone,created_at,language,notification_prefs";
+  "id,full_name,iban,role,il,bolge,phone,created_at,language,notification_prefs,izin_modu,izin_vekil_id,izin_baslangic,izin_bitis";
 
 export default async function ProfilPage() {
   console.log("Profil sayfası yükleniyor...");
@@ -25,7 +25,7 @@ export default async function ProfilPage() {
     error: profileError,
   } = await supabase
     .from("profiles")
-    .select("*")
+    .select(PROFILE_SELECT)
     .eq("id", user.id)
     .single();
 

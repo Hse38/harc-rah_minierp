@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { notifyApi } from "@/lib/notify-api";
 import type { DashboardKoordinatorResponse } from "@/lib/dashboard-data";
 import { useHighlightExpense } from "@/lib/use-highlight-expense";
+import { ButceGerceklesenChart, type ButceGerceklesenRow } from "@/components/ButceGerceklesenChart";
 
 const KoordinatorCharts = dynamic(
   () => import("@/components/dashboard/KoordinatorCharts").then((m) => ({ default: m.KoordinatorCharts })),
@@ -63,12 +64,26 @@ export function KoordinatorClient({
   const [rejectModal, setRejectModal] = useState<Expense | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [receiptLightbox, setReceiptLightbox] = useState<{ url: string; bolgeNote: string | null } | null>(null);
+  const [butceData, setButceData] = useState<ButceGerceklesenRow[] | null>(null);
   const searchParams = useSearchParams();
 
   useEffect(() => {
     const t = searchParams.get("tab");
     if (t === "dashboard" || t === "awaiting" || t === "completed" || t === "limits") setActiveTab(t);
   }, [searchParams]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/butce-gerceklesen");
+        const json = (await res.json().catch(() => null)) as ButceGerceklesenRow[] | { error?: string } | null;
+        if (!res.ok) return;
+        if (Array.isArray(json)) setButceData(json);
+      } catch {
+        // ignore
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     if (highlight) setActiveTab("awaiting");
@@ -501,6 +516,17 @@ export function KoordinatorClient({
               approvalTimeByRegion={approvalTimeByRegion}
               typeChartData={typeChartData}
             />
+
+            {butceData && (
+              <Card className="rounded-2xl shadow-sm border-gray-200 overflow-hidden">
+                <CardContent className="p-4 md:p-5">
+                  <h3 className="text-sm md:text-[14px] font-semibold text-[#374151] mb-3">
+                    Bütçe / Gerçekleşen Karşılaştırması
+                  </h3>
+                  <ButceGerceklesenChart data={butceData} />
+                </CardContent>
+              </Card>
+            )}
 
             <Card className="rounded-2xl shadow-sm border-gray-200 overflow-hidden">
               <CardContent className="p-4 md:p-5">

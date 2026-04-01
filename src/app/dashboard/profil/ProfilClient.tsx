@@ -19,6 +19,13 @@ import { useLang } from "@/contexts/LanguageContext";
 import { t, type TranslationKey } from "@/lib/i18n";
 import { bolgeAdi } from "@/lib/utils";
 import { validatePhone } from "./phone-validate";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 function getInitials(fullName: string): string {
   return fullName
@@ -72,6 +79,15 @@ export function ProfilClient({
   const [notificationPrefs, setNotificationPrefs] = useState<NotificationPrefs>(
     { ...DEFAULT_NOTIFICATION_PREFS, ...(initialProfile?.notification_prefs as NotificationPrefs | undefined) }
   );
+  const [izinModu, setIzinModu] = useState<boolean>(!!initialProfile?.izin_modu);
+  const [izinVekilId, setIzinVekilId] = useState<string>(initialProfile?.izin_vekil_id ?? "");
+  const [izinBaslangic, setIzinBaslangic] = useState<string>(
+    initialProfile?.izin_baslangic ? String(initialProfile.izin_baslangic).slice(0, 10) : ""
+  );
+  const [izinBitis, setIzinBitis] = useState<string>(
+    initialProfile?.izin_bitis ? String(initialProfile.izin_bitis).slice(0, 10) : ""
+  );
+  const [bolgeUsers, setBolgeUsers] = useState<{ id: string; full_name: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const [signingOutAll, setSigningOutAll] = useState(false);
 
@@ -112,7 +128,12 @@ export function ProfilClient({
       phone !== (profile.phone ?? "") ||
       lang !== (profile.language ?? "tr") ||
       JSON.stringify(notificationPrefs) !==
-        JSON.stringify(profile.notification_prefs ?? {}));
+        JSON.stringify(profile.notification_prefs ?? {}) ||
+      (profile.role === "bolge" &&
+        (izinModu !== !!profile.izin_modu ||
+          (izinVekilId || null) !== (profile.izin_vekil_id ?? null) ||
+          (izinBaslangic || null) !== (profile.izin_baslangic ? String(profile.izin_baslangic).slice(0, 10) : null) ||
+          (izinBitis || null) !== (profile.izin_bitis ? String(profile.izin_bitis).slice(0, 10) : null))));
   const hasValidProfile = hasProfileChanges && !ibanError && !phoneError;
   const hasValidPassword =
     passwordFilled && passwordValid && passwordMatch && !passwordError;
@@ -139,6 +160,14 @@ export function ProfilClient({
             phone: phone.trim() || null,
             language: lang,
             notification_prefs: notificationPrefs,
+            ...(profile.role === "bolge"
+              ? {
+                  izin_modu: izinModu,
+                  izin_vekil_id: izinVekilId ? izinVekilId : null,
+                  izin_baslangic: izinBaslangic ? new Date(izinBaslangic + "T00:00:00.000Z").toISOString() : null,
+                  izin_bitis: izinBitis ? new Date(izinBitis + "T23:59:59.999Z").toISOString() : null,
+                }
+              : {}),
           })
           .eq("id", profile.id);
       }
@@ -167,6 +196,14 @@ export function ProfilClient({
               phone: phone.trim() || null,
               language: lang,
               notification_prefs: notificationPrefs,
+              ...(prev.role === "bolge"
+                ? {
+                    izin_modu: izinModu,
+                    izin_vekil_id: izinVekilId ? izinVekilId : null,
+                    izin_baslangic: izinBaslangic ? new Date(izinBaslangic + "T00:00:00.000Z").toISOString() : null,
+                    izin_bitis: izinBitis ? new Date(izinBitis + "T23:59:59.999Z").toISOString() : null,
+                  }
+                : {}),
             }
           : null
       );
@@ -208,6 +245,20 @@ export function ProfilClient({
   const roleLabelKey: TranslationKey =
     roleKey === "bolge" ? "misc_bölge_sorumlusu" : roleKey === "il" ? "misc_il_sorumlusu" : roleKey === "koordinator" ? "misc_koordinator" : roleKey === "muhasebe" ? "misc_muhasebe" : roleKey === "yk" ? "misc_yk" : "misc_deneyap";
   const roleLabel = t(roleLabelKey, lang);
+
+  useEffect(() => {
+    (async () => {
+      if (!profile?.bolge || profile.role !== "bolge") return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("id,full_name,role,bolge")
+        .eq("bolge", profile.bolge)
+        .eq("role", "bolge")
+        .order("full_name");
+      const rows = (data ?? []) as { id: string; full_name: string; role: string; bolge: string }[];
+      setBolgeUsers(rows.filter((u) => u.id !== profile.id).map((u) => ({ id: u.id, full_name: u.full_name })));
+    })();
+  }, [profile?.bolge, profile?.id, profile?.role, supabase]);
 
   return (
     <div className="space-y-6">
@@ -394,6 +445,55 @@ export function ProfilClient({
           </label>
         </CardContent>
       </Card>
+
+      {/* 4.5 İzin modu (Bölge sorumlusu) */}
+      {profile.role === "bolge" && profile.bolge && (
+        <Card className="rounded-2xl shadow-sm">
+          <CardContent className="p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-slate-800 md:text-lg md:font-semibold">İzin / Tatil Modu</h3>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={izinModu}
+                onChange={(e) => setIzinModu(e.target.checked)}
+                className="rounded border-slate-300"
+              />
+              <span className="text-sm">İzin modunu aç</span>
+            </label>
+
+            <div className={cn("space-y-2", !izinModu && "opacity-50 pointer-events-none")}>
+              <div className="space-y-1">
+                <Label>Vekil</Label>
+                <Select value={izinVekilId || "none"} onValueChange={(v) => setIzinVekilId(v === "none" ? "" : v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Vekil seçin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Seçilmedi</SelectItem>
+                    {bolgeUsers.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-slate-500">Aynı bölgedeki başka bir bölge sorumlusunu seçin.</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>Başlangıç (opsiyonel)</Label>
+                  <Input type="date" value={izinBaslangic} onChange={(e) => setIzinBaslangic(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <Label>Bitiş (opsiyonel)</Label>
+                  <Input type="date" value={izinBitis} onChange={(e) => setIzinBitis(e.target.value)} />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* 5. Güvenlik: Şifre değiştir */}
       <Card className="rounded-2xl shadow-sm">

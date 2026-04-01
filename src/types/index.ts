@@ -54,6 +54,10 @@ export interface Profile {
   created_at: string;
   language?: ProfileLanguage | null;
   notification_prefs?: NotificationPrefs | null;
+  izin_modu?: boolean;
+  izin_vekil_id?: string | null;
+  izin_baslangic?: string | null;
+  izin_bitis?: string | null;
 }
 
 export interface Expense {

@@ -78,14 +78,16 @@ export function DeneyapClient({
       } = await supabase.auth.getUser();
       if (!user) return;
       setSubmitterId(user.id);
-      const { data: p } = await supabase.from("profiles").select("full_name, il, bolge").eq("id", user.id).single();
+      const [{ data: p }, { data }] = await Promise.all([
+        supabase.from("profiles").select("full_name, il, bolge").eq("id", user.id).single(),
+        supabase
+          .from("expenses")
+          .select(EXPENSE_FIELDS_LIST)
+          .eq("submitter_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(500),
+      ]);
       setProfile((p as { full_name?: string; il?: string; bolge?: string } | null) ?? null);
-      const { data } = await supabase
-        .from("expenses")
-        .select(EXPENSE_FIELDS_LIST)
-        .eq("submitter_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(500);
       setExpenses((data ?? []) as Expense[]);
       setLoading(false);
     })();
@@ -173,7 +175,18 @@ export function DeneyapClient({
   async function handleCancelExpense(exp: Expense) {
     setCancelling(true);
     try {
-      await supabase.from("expenses").delete().eq("id", exp.id);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      await supabase
+        .from("expenses")
+        .update({
+          status: "deleted",
+          archived_at: new Date().toISOString(),
+          archived_by: user?.id ?? null,
+          previous_status: exp.status,
+        })
+        .eq("id", exp.id);
       setExpenses((prev) => prev.filter((e) => e.id !== exp.id));
       toast.success(`${exp.expense_number} iptal edildi`);
       setCancelTarget(null);

@@ -99,6 +99,7 @@ export default function AdminHarcamalarPage() {
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<ExpenseRow | null>(null);
   const [receiptLightbox, setReceiptLightbox] = useState<{ url: string } | null>(null);
+  const [tab, setTab] = useState<"aktif" | "arsiv">("aktif");
   const [statusFilter, setStatusFilter] = useState("");
   const [bolgeFilter, setBolgeFilter] = useState("");
   const [ilFilter, setIlFilter] = useState("");
@@ -119,6 +120,7 @@ export default function AdminHarcamalarPage() {
   const fetchList = async () => {
     setLoading(true);
     const params = new URLSearchParams();
+    if (tab === "arsiv") params.set("archived", "only");
     if (statusFilter) params.set("status", statusFilter);
     if (bolgeFilter) params.set("bolge", bolgeFilter);
     if (ilFilter) params.set("il", ilFilter);
@@ -137,7 +139,7 @@ export default function AdminHarcamalarPage() {
 
   useEffect(() => {
     fetchList();
-  }, [statusFilter, bolgeFilter, sort, order]);
+  }, [tab, statusFilter, bolgeFilter, sort, order]);
 
   const handleChangeStatus = async () => {
     if (!detail || !reason.trim()) return;
@@ -172,9 +174,27 @@ export default function AdminHarcamalarPage() {
     }
   };
 
+  const handleRestore = async () => {
+    if (!detail) return;
+    const res = await fetch(`/api/admin/expenses/${detail.id}/restore`, { method: "POST" });
+    if (res.ok) {
+      setDetail(null);
+      setDeleteConfirm(false);
+      fetchList();
+    }
+  };
+
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold text-slate-900">Tüm Harcamalar</h1>
+      <div className="flex gap-2">
+        <Button variant={tab === "aktif" ? "default" : "outline"} onClick={() => setTab("aktif")}>
+          Aktif
+        </Button>
+        <Button variant={tab === "arsiv" ? "default" : "outline"} onClick={() => setTab("arsiv")}>
+          Arşiv
+        </Button>
+      </div>
       <div className="flex flex-wrap gap-2 items-end">
         <div className="space-y-1">
           <Label className="text-xs">Durum</Label>
@@ -289,23 +309,25 @@ export default function AdminHarcamalarPage() {
                 <FileImage className="h-4 w-4 mr-2" /> Fişi Gör
               </Button>
             )}
+            {tab === "aktif" && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setNewStatus(detail?.status ?? "pending_bolge");
+                  setChangeStatusOpen(true);
+                }}
+              >
+                Durumu Değiştir
+              </Button>
+            )}
             <Button
-              variant="outline"
-              onClick={() => {
-                setNewStatus(detail?.status ?? "pending_bolge");
-                setChangeStatusOpen(true);
-              }}
-            >
-              Durumu Değiştir
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deleting}
+              variant={tab === "arsiv" ? "default" : "destructive"}
+              onClick={tab === "arsiv" ? handleRestore : handleDelete}
+              disabled={tab === "arsiv" ? false : deleting}
               className="flex items-center gap-1"
             >
               <Shield className="h-4 w-4" />
-              {deleteConfirm ? "Emin misiniz? Tekrar tıklayın" : "Sil"}
+              {tab === "arsiv" ? "Arşivden Geri Al" : deleteConfirm ? "Emin misiniz? Tekrar tıklayın" : "Arşivle"}
             </Button>
           </DialogFooter>
         </DialogContent>

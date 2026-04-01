@@ -72,19 +72,16 @@ export default function DeneyapDuzenlePage() {
         router.push("/login");
         return;
       }
-      const { data: p } = await supabase
-        .from("profiles")
-        .select(PROFILE_FIELDS_FORM)
-        .eq("id", user.id)
-        .single();
+      const [{ data: p }, { data: ex, error }] = await Promise.all([
+        supabase.from("profiles").select(PROFILE_FIELDS_FORM).eq("id", user.id).single(),
+        supabase
+          .from("expenses")
+          .select(EXPENSE_FIELDS_FULL)
+          .eq("id", id)
+          .eq("submitter_id", user.id)
+          .single(),
+      ]);
       setProfile(p as Profile | null);
-
-      const { data: ex, error } = await supabase
-        .from("expenses")
-        .select(EXPENSE_FIELDS_FULL)
-        .eq("id", id)
-        .eq("submitter_id", user.id)
-        .single();
       if (error || !ex) {
         toast.error("Harcama bulunamadı.");
         router.push("/dashboard/deneyap");
