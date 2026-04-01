@@ -236,11 +236,16 @@ export default function DeneyapYeniPage() {
         }),
       });
 
-      const payload = (await res.json()) as
+      const payload = (await res.json().catch(() => ({}))) as
         | { ok: true; id: string; expense_number: string }
         | { error?: string };
 
       if (!res.ok) {
+        if (res.status === 409) {
+          const msg = (payload as { error?: string } | null)?.error;
+          toast.error(msg || "Bu fiş daha önce kullanıldı.");
+          return;
+        }
         if (process.env.NODE_ENV === "development") {
           // eslint-disable-next-line no-console
           console.error("RAW API ERROR PAYLOAD:", payload);
