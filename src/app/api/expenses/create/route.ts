@@ -17,6 +17,17 @@ type CreateExpenseBody = {
   kategori_detay?: unknown;
 };
 
+function normalizeFisHash(input: unknown): string | null {
+  if (input == null) return null;
+  const s = String(input).trim();
+  if (!s) return null;
+  const lower = s.toLowerCase();
+  if (lower === "null" || lower === "undefined") return null;
+  // sha256 hex digest => 64 hex chars
+  if (!/^[a-f0-9]{64}$/i.test(s)) return null;
+  return lower;
+}
+
 export async function POST(request: Request) {
   const supabase = await createClient();
   const supabaseAdmin = createAdminClient();
@@ -46,16 +57,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Profil bulunamadı" }, { status: 400 });
   }
 
-  const fis_hash = body.fis_hash ? String(body.fis_hash).trim() : null;
+  const fis_hash = normalizeFisHash(body.fis_hash);
+  // Skip duplicate detection if hash is missing/invalid.
   if (fis_hash) {
     // IMPORTANT: global duplicate detection must bypass RLS
-    const { data: dup } = await supabaseAdmin
+    const { data: dup, error: dupErr } = await supabaseAdmin
       .from("expenses")
       .select("expense_number,status")
       .eq("fis_hash", fis_hash)
       .not("status", "in", "(deleted,rejected_bolge,rejected_koord)")
       .limit(1)
       .maybeSingle();
+
+    // If the duplicate-check query itself errors, do NOT block with 409.
+    // Let the insert proceed; any real conflict will surface as an insert error.
+    if (dupErr && process.env.NODE_ENV === "development") {
+      // eslint-disable-next-line no-console
+      console.error("[expenses/create] dup check error:", dupErr);
+    }
 
     if (dup && (dup as { expense_number?: string } | null)?.expense_number) {
       const num = (dup as { expense_number: string }).expense_number;

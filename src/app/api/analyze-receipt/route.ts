@@ -23,7 +23,11 @@ export async function POST(request: Request) {
 
     if (base64 && typeof base64 === "string" && mediaType) {
       const buf = Buffer.from(base64, "base64");
-      const fis_hash = crypto.createHash("sha256").update(buf).digest("hex");
+      const fis_hash =
+        buf.length > 0 ? crypto.createHash("sha256").update(buf).digest("hex") : null;
+      if (!fis_hash) {
+        console.log("[analyze-receipt] UYARI: base64 decode buffer boş, fis_hash üretilemedi.");
+      }
       // 2) Direkt base64 kullan — Claude'a ne gönderildiğini logla
       console.log("[analyze-receipt] Claude'a gönderiliyor: base64 length =", base64.length, "mediaType =", mediaType);
       const result = await analyzeReceiptFromBase64(base64, String(mediaType));
