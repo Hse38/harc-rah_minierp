@@ -65,7 +65,7 @@ export async function POST(request: Request) {
       .from("expenses")
       .select("expense_number,status")
       .eq("fis_hash", fis_hash)
-      .not("status", "in", "(deleted,rejected_bolge,rejected_koord)")
+      .not("status", "in", '("deleted","rejected_bolge","rejected_koord")')
       .limit(1)
       .maybeSingle();
 
@@ -77,6 +77,7 @@ export async function POST(request: Request) {
     }
 
     if (dup && (dup as { expense_number?: string } | null)?.expense_number) {
+      console.log("DUP FOUND:", JSON.stringify(dup));
       const num = (dup as { expense_number: string }).expense_number;
       return NextResponse.json(
         {
