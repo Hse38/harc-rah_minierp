@@ -58,109 +58,137 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Fiş yüklemek zorunludur" }, { status: 400 });
     }
 
-  const { data: profile, error: pErr } = await supabase
-    .from("profiles")
-    .select("id, full_name, iban, il, bolge, role")
-    .eq("id", user.id)
-    .single();
-  if (pErr || !profile) {
-    return NextResponse.json({ error: "Profil bulunamadı" }, { status: 400 });
-  }
-
-  const fis_hash = normalizeFisHash(body.fis_hash);
-  // Skip duplicate detection if hash is missing/invalid.
-  if (fis_hash) {
-    // IMPORTANT: global duplicate detection must bypass RLS
-    const { data: dup, error: dupErr } = await supabaseAdmin
-      .from("expenses")
-      .select("expense_number,status")
-      .eq("fis_hash", fis_hash)
-      .not("status", "in", '("deleted","rejected_bolge","rejected_koord")')
-      .limit(1)
-      .maybeSingle();
-
-    // If the duplicate-check query itself errors, do NOT block with 409.
-    // Let the insert proceed; any real conflict will surface as an insert error.
-    if (dupErr && process.env.NODE_ENV === "development") {
-      // eslint-disable-next-line no-console
-      console.error("[expenses/create] dup check error:", dupErr);
+    const { data: profile, error: pErr } = await supabase
+      .from("profiles")
+      .select("id, full_name, iban, il, bolge, role")
+      .eq("id", user.id)
+      .single();
+    // eslint-disable-next-line no-console
+    console.error("[expenses/create] profile fetched", { ok: !pErr, hasProfile: !!profile });
+    if (pErr || !profile) {
+      return NextResponse.json({ error: "Profil bulunamadı" }, { status: 400 });
     }
 
-    if (dup && (dup as { expense_number?: string } | null)?.expense_number) {
-      console.log("DUP FOUND:", JSON.stringify(dup));
-      const num = (dup as { expense_number: string }).expense_number;
+    const fis_hash = normalizeFisHash(body.fis_hash);
+    // eslint-disable-next-line no-console
+    console.error("[expenses/create] fis_hash normalized", { hasFisHash: !!fis_hash });
+    // Skip duplicate detection if hash is missing/invalid.
+    if (fis_hash) {
+      // IMPORTANT: global duplicate detection must bypass RLS
+      const { data: dup, error: dupErr } = await supabaseAdmin
+        .from("expenses")
+        .select("expense_number,status")
+        .eq("fis_hash", fis_hash)
+        .not("status", "in", '("deleted","rejected_bolge","rejected_koord")')
+        .limit(1)
+        .maybeSingle();
+
+      // eslint-disable-next-line no-console
+      console.error("[expenses/create] dup check complete", { hasDup: !!dup, hasErr: !!dupErr });
+
+      // If the duplicate-check query itself errors, do NOT block with 409.
+      // Let the insert proceed; any real conflict will surface as an insert error.
+      if (dupErr && process.env.NODE_ENV === "development") {
+        // eslint-disable-next-line no-console
+        console.error("[expenses/create] dup check error:", dupErr);
+      }
+
+      if (dup && (dup as { expense_number?: string } | null)?.expense_number) {
+        console.log("DUP FOUND:", JSON.stringify(dup));
+        const num = (dup as { expense_number: string }).expense_number;
+        return NextResponse.json(
+          {
+            error:
+              `Bu fiş daha önce kullanıldı. Aynı fiş tekrar yüklenemez. (İlgili harcama: ${num})`,
+            duplicate_expense_number: num,
+          },
+          { status: 409 }
+        );
+      }
+    }
+
+    const expense_number = await getNextExpenseNumber(async () => {
+      // IMPORTANT: expense_number generation must bypass RLS, otherwise users may always get HRC-1001
+      const { data: lastRow } = await supabaseAdmin
+        .from("expenses")
+        .select("expense_number")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return (lastRow as { expense_number: string } | null)?.expense_number ?? null;
+    });
+    // eslint-disable-next-line no-console
+    console.error("[expenses/create] expense_number generated", { expense_number });
+
+    const insertPayload = {
+      expense_number,
+      submitter_id: profile.id as string,
+      submitter_name:
+        (profile as { full_name?: string | null }).full_name ??
+        (user.user_metadata?.full_name as string) ??
+        "",
+      iban: body.iban || (profile as { iban?: string | null }).iban || "",
+      il: body.il || (profile as { il?: string | null }).il || "",
+      bolge: (profile as { bolge?: string | null }).bolge || "",
+      expense_type: body.expense_type || "Diğer",
+      amount,
+      description: body.description || "",
+      receipt_url: body.receipt_url,
+      ai_analysis: body.ai_analysis ?? null,
+      status:
+        (profile as { role?: string | null }).role === "bolge"
+          ? ("pending_koord" as const)
+          : ("pending_bolge" as const),
+      manuel_giris: !!body.manuel_giris,
+      eski_fis: !!body.eski_fis,
+      fis_hash,
+      kategori_detay: body.kategori_detay ?? null,
+    };
+
+    // eslint-disable-next-line no-console
+    console.error("[expenses/create] before insert", { keys: Object.keys(insertPayload) });
+
+    const { error: insErr } = await supabaseAdmin.from("expenses").insert(insertPayload);
+    // eslint-disable-next-line no-console
+    console.error("[expenses/create] after insert", { ok: !insErr });
+    if (insErr) {
+      // Preserve useful fields for debugging + client-side mapping
+      // eslint-disable-next-line no-console
+      console.error("[expenses/create] Insert error:", JSON.stringify(insErr));
+      // eslint-disable-next-line no-console
+      console.error("[expenses/create] Insert payload keys:", Object.keys(insertPayload));
       return NextResponse.json(
         {
-          error:
-            `Bu fiş daha önce kullanıldı. Aynı fiş tekrar yüklenemez. (İlgili harcama: ${num})`,
-          duplicate_expense_number: num,
+          error: insErr.message,
+          code: (insErr as { code?: string }).code,
+          details: (insErr as { details?: string }).details,
         },
-        { status: 409 }
+        { status: 400 }
       );
     }
-  }
 
-  const expense_number = await getNextExpenseNumber(async () => {
-    // IMPORTANT: expense_number generation must bypass RLS, otherwise users may always get HRC-1001
-    const { data: lastRow } = await supabaseAdmin
+    const { data: inserted } = await supabaseAdmin
       .from("expenses")
-      .select("expense_number")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    return (lastRow as { expense_number: string } | null)?.expense_number ?? null;
-  });
+      .select("id, expense_number")
+      .eq("expense_number", expense_number)
+      .single();
 
-  const insertPayload = {
-    expense_number,
-    submitter_id: profile.id as string,
-    submitter_name: (profile as { full_name?: string | null }).full_name ?? (user.user_metadata?.full_name as string) ?? "",
-    iban: body.iban || (profile as { iban?: string | null }).iban || "",
-    il: body.il || (profile as { il?: string | null }).il || "",
-    bolge: (profile as { bolge?: string | null }).bolge || "",
-    expense_type: body.expense_type || "Diğer",
-    amount,
-    description: body.description || "",
-    receipt_url: body.receipt_url,
-    ai_analysis: body.ai_analysis ?? null,
-    status:
-      (profile as { role?: string | null }).role === "bolge"
-        ? ("pending_koord" as const)
-        : ("pending_bolge" as const),
-    manuel_giris: !!body.manuel_giris,
-    eski_fis: !!body.eski_fis,
-    fis_hash,
-    kategori_detay: body.kategori_detay ?? null,
-  };
-
-  const { error: insErr } = await supabaseAdmin.from("expenses").insert(insertPayload);
-  if (insErr) {
+    return NextResponse.json({ ok: true, ...inserted });
+  } catch (error) {
     // eslint-disable-next-line no-console
-    console.error("[expenses/create] Insert error:", JSON.stringify(insErr));
-    // eslint-disable-next-line no-console
-    console.error("[expenses/create] Insert payload keys:", Object.keys(insertPayload));
-    // Preserve useful fields for debugging + client-side mapping
+    console.error("[expenses/create] Unexpected error:", error);
     return NextResponse.json(
       {
-        error: insErr.message,
-        code: (insErr as { code?: string }).code,
-        details: (insErr as { details?: string }).details,
+        error: error instanceof Error ? error.message : "Create expense failed",
+        stack:
+          process.env.NODE_ENV === "development"
+            ? error instanceof Error
+              ? error.stack
+              : ""
+            : undefined,
       },
-      { status: 400 }
+      { status: 500 }
     );
-  }
-
-  const { data: inserted } = await supabaseAdmin
-    .from("expenses")
-    .select("id, expense_number")
-    .eq("expense_number", expense_number)
-    .single();
-
-  return NextResponse.json({ ok: true, ...inserted });
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error("[expenses/create] 500:", e);
-    return NextResponse.json({ error: "Create expense failed" }, { status: 500 });
   }
 }
 
