@@ -29,24 +29,34 @@ function normalizeFisHash(input: unknown): string | null {
 }
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const supabaseAdmin = createAdminClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  try {
+    const supabase = await createClient();
+    const supabaseAdmin = createAdminClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  const body = (await request.json()) as CreateExpenseBody;
+    const body = (await request.json()) as CreateExpenseBody;
 
-  const amount = Number(body.amount);
-  if (!Number.isFinite(amount) || amount <= 0) {
-    return NextResponse.json({ error: "Geçersiz tutar" }, { status: 400 });
-  }
-  if (!body.receipt_url) {
-    return NextResponse.json({ error: "Fiş yüklemek zorunludur" }, { status: 400 });
-  }
+    if (process.env.NODE_ENV !== "production") {
+      // eslint-disable-next-line no-console
+      console.error("[expenses/create] body.receipt_url:", body?.receipt_url);
+    }
+
+    const amount = Number(body.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return NextResponse.json({ error: "Geçersiz tutar" }, { status: 400 });
+    }
+    if (!body.receipt_url) {
+      if (process.env.NODE_ENV !== "production") {
+        // eslint-disable-next-line no-console
+        console.error("[expenses/create] missing receipt_url");
+      }
+      return NextResponse.json({ error: "Fiş yüklemek zorunludur" }, { status: 400 });
+    }
 
   const { data: profile, error: pErr } = await supabase
     .from("profiles")
@@ -125,6 +135,10 @@ export async function POST(request: Request) {
 
   const { error: insErr } = await supabaseAdmin.from("expenses").insert(insertPayload);
   if (insErr) {
+    // eslint-disable-next-line no-console
+    console.error("[expenses/create] Insert error:", JSON.stringify(insErr));
+    // eslint-disable-next-line no-console
+    console.error("[expenses/create] Insert payload keys:", Object.keys(insertPayload));
     // Preserve useful fields for debugging + client-side mapping
     return NextResponse.json(
       {
@@ -143,5 +157,10 @@ export async function POST(request: Request) {
     .single();
 
   return NextResponse.json({ ok: true, ...inserted });
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error("[expenses/create] 500:", e);
+    return NextResponse.json({ error: "Create expense failed" }, { status: 500 });
+  }
 }
 
