@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { DashboardDeneyapResponse } from "@/app/api/dashboard/route";
 import type { Expense, ExpenseStatus } from "@/types";
 
@@ -15,7 +15,7 @@ const EXPENSE_FIELDS_DENEYAP =
   "id,expense_number,submitter_id,submitter_name,amount,status,created_at,expense_type";
 
 async function getDeneyapPayloadUncached(userId: string): Promise<DashboardDeneyapResponse | null> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("expenses")
     .select(EXPENSE_FIELDS_DENEYAP)
@@ -84,7 +84,7 @@ export async function getDashboardDataDeneyap(userId: string): Promise<Dashboard
 }
 
 async function getKoordinatorPayloadUncached(): Promise<DashboardKoordinatorResponse> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const [expensesRes, limitsRes] = await Promise.all([
     supabase
       .from("expenses")

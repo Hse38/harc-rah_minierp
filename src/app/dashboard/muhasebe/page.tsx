@@ -125,12 +125,39 @@ export default function MuhasebePage() {
   }, [supabase]);
 
   const refetch = useCallback(async () => {
-    const { data } = await supabase
+    let data: unknown = null;
+    let error: any = null;
+
+    // Prefer excluding archived expenses, but be resilient if DB isn't migrated yet.
+    const res = await supabase
       .from("expenses")
       .select(EXPENSE_FIELDS_FULL)
       .in("status", ["approved_koord", "paid"])
       .is("archived_at", null)
       .order("created_at", { ascending: false });
+    data = res.data;
+    error = res.error;
+
+    if (error?.code === "42703" && String(error?.message ?? "").includes("archived_at")) {
+      const res2 = await supabase
+        .from("expenses")
+        .select(EXPENSE_FIELDS_FULL)
+        .in("status", ["approved_koord", "paid"])
+        .order("created_at", { ascending: false });
+      data = res2.data;
+      error = res2.error;
+    }
+    if (process.env.NODE_ENV === "development") {
+      // eslint-disable-next-line no-console
+      console.log("[muhasebe] expenses refetch", {
+        rows: Array.isArray(data) ? data.length : null,
+        error,
+      });
+      if (error) {
+        // eslint-disable-next-line no-console
+        console.error("[muhasebe] expenses refetch error", error);
+      }
+    }
     setExpenses((data ?? []) as Expense[]);
     setLoading(false);
   }, [supabase]);
