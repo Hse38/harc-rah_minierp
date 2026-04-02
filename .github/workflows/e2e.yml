@@ -27,6 +27,15 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_EMAIL: ${{ secrets.VAPID_EMAIL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
 
       - name: Start server
         run: |
@@ -35,7 +44,23 @@ jobs:
 
       - name: Run Playwright tests
         env:
-          PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_EMAIL: ${{ secrets.VAPID_EMAIL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          PLAYWRIGHT_BASE_URL: ${{ secrets.PLAYWRIGHT_BASE_URL }}
+          TEST_USER_DENEYAP_EMAIL: ${{ secrets.TEST_USER_DENEYAP_EMAIL }}
+          TEST_USER_DENEYAP_PASSWORD: ${{ secrets.TEST_USER_DENEYAP_PASSWORD }}
+          TEST_USER_BOLGE_EMAIL: ${{ secrets.TEST_USER_BOLGE_EMAIL }}
+          TEST_USER_BOLGE_PASSWORD: ${{ secrets.TEST_USER_BOLGE_PASSWORD }}
+          TEST_USER_KOORD_EMAIL: ${{ secrets.TEST_USER_KOORD_EMAIL }}
+          TEST_USER_KOORD_PASSWORD: ${{ secrets.TEST_USER_KOORD_PASSWORD }}
+          TEST_USER_MUHASEBE_EMAIL: ${{ secrets.TEST_USER_MUHASEBE_EMAIL }}
+          TEST_USER_MUHASEBE_PASSWORD: ${{ secrets.TEST_USER_MUHASEBE_PASSWORD }}
         run: npx playwright test
 
       - name: Upload Playwright report (on failure)
