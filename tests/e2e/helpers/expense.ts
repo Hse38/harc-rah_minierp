@@ -49,11 +49,14 @@ export async function createExpenseDeneyap(
   // which makes UI-based receipt upload flaky. Prefer creating via API with a placeholder receipt_url.
   if (process.env.CI && !opts?.forceUiFlow) {
     const expectedStatus = opts?.expectedStatus ?? 200;
+    const receiptUrl = "https://placehold.co/400x600.jpg";
+    // eslint-disable-next-line no-console
+    console.log("CI env:", process.env.CI, "Receipt URL:", receiptUrl);
     const payload = {
       expense_type: input.expenseType,
       amount: Number(input.amount),
       description: input.description,
-      receipt_url: "https://example.com/test-receipt.jpg",
+      receipt_url: receiptUrl,
       kategori_detay:
         input.expenseType === "Yakıt"
           ? { km: Number(input.extra?.km ?? "10") }
@@ -74,6 +77,10 @@ export async function createExpenseDeneyap(
     const res = await page.request.post("/api/expenses/create", { data: payload });
     const json = (await res.json().catch(() => ({}))) as any;
     if (res.status() !== expectedStatus) {
+      // eslint-disable-next-line no-console
+      console.log("API response status:", res.status());
+      // eslint-disable-next-line no-console
+      console.log("API response body:", JSON.stringify(json));
       const msg = String(json?.error ?? json?.message ?? "");
       throw new Error(msg || `Unexpected status ${res.status()} (expected ${expectedStatus})`);
     }
