@@ -5,7 +5,10 @@ import { createExpenseDeneyap } from "./helpers/expense";
 const receiptPath = "tests/fixtures/test-receipt.jpg";
 
 test.describe("Notifications", () => {
-  test.skip("notification appears in bell and click navigates", async ({ browser }) => {
+  test.skip(
+    !!process.env.CI,
+    "Notifications are flaky in CI (realtime/cookies), skipped in CI",
+    async ({ browser }) => {
     test.setTimeout(180_000);
     const ctxCreate = await browser.newContext();
     const pageCreate = await ctxCreate.newPage();
